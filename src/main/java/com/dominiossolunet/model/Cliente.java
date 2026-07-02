@@ -1,36 +1,38 @@
 package com.dominiossolunet.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.List;
 
 /**
  * Model Class that represents a Client data type
  */
 
 @Entity
-public class Client {
+public class Cliente {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Getter@Setter
     private int id;
 
     @Getter@Setter
-    private String name;
+    private String nombre;
 
     @Getter@Setter
     private String email;
 
-    public Client(){}
+    @OneToMany(mappedBy = "cliente")
+    List<Dominio> dominios;
+
+    public Cliente(){}
 
     @Override
     public String toString() {
         return "Client{" +
                 "id=" + id +
-                ", name='" + name + '\'' +
+                ", name='" + nombre + '\'' +
                 ", email='" + email + '\'' +
                 '}';
     }
