@@ -19,8 +19,8 @@ public class Facturacion {
     private EstadoFacturacion estadoFacturacion;
     private LocalDate fechaUltimaFactura;
 
-    @OneToOne
-    @JoinColumn(name= "idDominio")
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name= "id_dominio")
     private Dominio dominio;
     private String nota;
 }
