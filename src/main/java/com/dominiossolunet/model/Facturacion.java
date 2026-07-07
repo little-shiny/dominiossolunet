@@ -1,6 +1,7 @@
 package com.dominiossolunet.model;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -10,6 +11,7 @@ import java.time.LocalDate;
 @Getter@Setter
 public class Facturacion {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Getter(AccessLevel.NONE)
     private int id;
 
     @Enumerated(EnumType.STRING)

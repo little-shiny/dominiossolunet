@@ -1,34 +1,34 @@
 package com.dominiossolunet.model;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDate;
 
 @Getter
+@Setter
 @Entity
 public class Dominio {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Getter(AccessLevel.NONE)
     private int id;
 
     @Enumerated(EnumType.STRING)
-    @Setter
+
     private Estado estado;
 
-    @Setter
+
     private LocalDate fechaExpiracion;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "idCliente")
-    @Setter
     private Cliente cliente;
 
-    @Setter
     private String nombreDominio;
 
-    @Setter
     private LocalDate ultimoAviso;
 
 }
