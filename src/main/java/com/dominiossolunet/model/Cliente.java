@@ -1,5 +1,6 @@
 package com.dominiossolunet.model;
 
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -18,6 +19,7 @@ public class Cliente {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
+    @Column(nullable = false)
     private String nombre;
 
     private String email;

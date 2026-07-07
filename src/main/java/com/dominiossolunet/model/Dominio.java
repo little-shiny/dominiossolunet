@@ -1,9 +1,11 @@
 package com.dominiossolunet.model;
 
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import org.antlr.v4.runtime.misc.NotNull;
 
 import java.time.LocalDate;
 
@@ -23,7 +25,7 @@ public class Dominio {
     private LocalDate fechaExpiracion;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_cliente")
+    @JoinColumn(name = "id_cliente", nullable = false)
     private Cliente cliente;
 
 
