@@ -10,14 +10,17 @@ import java.time.LocalDate;
 @Entity
 @Getter@Setter
 public class Facturacion {
+
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     private int id;
 
     @Enumerated(EnumType.STRING)
     private EstadoFacturacion estadoFacturacion;
     private LocalDate fechaUltimaFactura;
-    private int idCliente;
-    private int idDominio;
+
+    @OneToOne
+    @JoinColumn(name= "idDominio")
+    private Dominio dominio;
     private String nota;
 }
