@@ -14,7 +14,7 @@ import java.util.List;
 @Entity
 @Getter @Setter
 public class Cliente {
-    @Id @Getter(AccessLevel.NONE)
+    @Id @Setter(AccessLevel.NONE)
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 

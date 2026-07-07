@@ -13,22 +13,25 @@ import java.time.LocalDate;
 public class Dominio {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
     private int id;
 
     @Enumerated(EnumType.STRING)
-
     private Estado estado;
 
 
     private LocalDate fechaExpiracion;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "idCliente")
+    @JoinColumn(name = "id_cliente")
     private Cliente cliente;
+
 
     private String nombreDominio;
 
     private LocalDate ultimoAviso;
+
+    @OneToOne(mappedBy = "dominio")
+    private Facturacion facturacion;
 
 }
