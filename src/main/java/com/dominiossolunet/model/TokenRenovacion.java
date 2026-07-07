@@ -8,8 +8,6 @@ import jakarta.persistence.Id;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.catalina.users.GenericRole;
-
 import java.time.LocalDateTime;
 
 @Entity @Getter
