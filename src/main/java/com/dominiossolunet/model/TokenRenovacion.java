@@ -1,16 +1,13 @@
 package com.dominiossolunet.model;
 
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import java.time.LocalDateTime;
 
-@Entity @Getter
+@Entity @Getter@Setter
 public class TokenRenovacion {
 
     @Id
@@ -18,17 +15,16 @@ public class TokenRenovacion {
     @Getter(AccessLevel.NONE)
     private int id;
 
-    @Getter
-    @Setter
     private LocalDateTime fechaCreacion;
 
-    @Getter @Setter
     private LocalDateTime fechaExpiracion;
 
-    @Getter @Setter
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_dominio")
+    private Dominio dominio;
+
     private String token;
 
-    @Getter@Setter
     private boolean usado;
 
 }
