@@ -40,17 +40,49 @@ public class ClienteRepositoryTest {
         Cliente cliente1 = clienteRecuperado.get();
         assertThat(cliente1.getNombre()).isEqualTo("Ana");
         assertThat(cliente1.getEmail()).isEqualTo("ana@ana.com");
+    }
 
+    @Test
+    void guardarYBuscarClientePorEmailExiste(){
+        //Inserción de datos de prueba
+        Cliente cliente1 = new Cliente();
+        cliente1.setNombre("Pepe");
+        cliente1.setEmail("pepe@pepe.com");
+        Cliente Cliente1Guardado = entityManager.persistAndFlush(cliente1);
 
+        Cliente cliente2 = new Cliente();
+        cliente2.setNombre("Maria");
+        cliente2.setEmail("maria@maria.com");
+        Cliente Cliente2Guardado = entityManager.persistAndFlush(cliente2);
 
+        Cliente cliente3 = new Cliente();
+        cliente3.setNombre("sara");
+        cliente3.setEmail("sara@sara.com");
+        Cliente Cliente3Guardado = entityManager.persistAndFlush(cliente3);
 
+        // act
+        Optional<Cliente> clienteRecuperado = clienteRepository.findByEmail("maria@maria.com");
 
+        //assert
+        assertThat(clienteRecuperado).isPresent();
+        assertThat(clienteRecuperado.get().getNombre()).isEqualTo("Maria");
+        assertThat(clienteRecuperado.get().getEmail()).isEqualTo("maria@maria.com");
+    }
 
+    @Test
+    void guardarYBuscarClientePorEmailENoExiste(){
+        //Inserción de datos de prueba
+        Cliente cliente1 = new Cliente();
+        cliente1.setNombre("Pepe");
+        cliente1.setEmail("pepe@pepe.com");
+        Cliente Cliente1Guardado = entityManager.persistAndFlush(cliente1);
+        // act
+        Optional<Cliente> clienteRecuperado = clienteRepository.findByEmail("maria@maria.com");
 
-
-
+        //assert
+        assertThat(clienteRecuperado).isNotPresent();
     }
 
 
 
-}
+    }
