@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 
-import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -48,17 +47,17 @@ public class ClienteRepositoryTest {
         Cliente cliente1 = new Cliente();
         cliente1.setNombre("Pepe");
         cliente1.setEmail("pepe@pepe.com");
-        Cliente Cliente1Guardado = entityManager.persistAndFlush(cliente1);
+        entityManager.persistAndFlush(cliente1);
 
         Cliente cliente2 = new Cliente();
         cliente2.setNombre("Maria");
         cliente2.setEmail("maria@maria.com");
-        Cliente Cliente2Guardado = entityManager.persistAndFlush(cliente2);
+        entityManager.persistAndFlush(cliente2);
 
         Cliente cliente3 = new Cliente();
         cliente3.setNombre("sara");
         cliente3.setEmail("sara@sara.com");
-        Cliente Cliente3Guardado = entityManager.persistAndFlush(cliente3);
+        entityManager.persistAndFlush(cliente3);
 
         // act
         Optional<Cliente> clienteRecuperado = clienteRepository.findByEmail("maria@maria.com");
@@ -75,7 +74,7 @@ public class ClienteRepositoryTest {
         Cliente cliente1 = new Cliente();
         cliente1.setNombre("Pepe");
         cliente1.setEmail("pepe@pepe.com");
-        Cliente Cliente1Guardado = entityManager.persistAndFlush(cliente1);
+        entityManager.persistAndFlush(cliente1);
         // act
         Optional<Cliente> clienteRecuperado = clienteRepository.findByEmail("maria@maria.com");
 

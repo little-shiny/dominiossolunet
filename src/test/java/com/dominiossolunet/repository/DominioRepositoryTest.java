@@ -30,7 +30,7 @@ public class DominioRepositoryTest {
         Cliente cliente = new Cliente();
         cliente.setNombre("Pepito");
         cliente.setEmail("pepito99@pepito.es");
-        Cliente clienteGuardado = entityManager.persistAndFlush(cliente);
+        entityManager.persistAndFlush(cliente);
 
         // crear un Dominio asociado a ese cliente
         Dominio dominio = new Dominio();
@@ -38,7 +38,7 @@ public class DominioRepositoryTest {
         dominio.setEstado(Estado.ACTIVO);
         dominio.setFechaExpiracion(LocalDate.now().plusDays(10));
         dominio.setNombreDominio("pepitoysuscosas.com");
-        Dominio dominioGuardado = entityManager.persistAndFlush(dominio);
+        entityManager.persistAndFlush(dominio);
 
         //TODO: cambiar a AssertionsJ
         //llamar al método derivado que se quiere probar
@@ -47,8 +47,8 @@ public class DominioRepositoryTest {
                 LocalDate.now().plusDays(20)
         );
         assertEquals(1, resultado.size());
-        assertEquals("pepitoysuscosas.com", resultado.get(0).getNombreDominio());
-        assertEquals(Estado.ACTIVO, resultado.get(0).getEstado());
+        assertEquals("pepitoysuscosas.com", resultado.getFirst().getNombreDominio());
+        assertEquals(Estado.ACTIVO, resultado.getFirst().getEstado());
     }
 
 }
