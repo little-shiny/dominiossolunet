@@ -30,9 +30,6 @@ public class Cliente {
     @NotBlank
     private String email;
 
-    @OneToMany(mappedBy = "cliente")
-    List<Dominio> dominios;
-
     public Cliente(){}
 
     @Override

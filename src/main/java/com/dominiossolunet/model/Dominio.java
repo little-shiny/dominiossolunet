@@ -35,9 +35,6 @@ public class Dominio {
 
     private LocalDate ultimoAviso;
 
-    @OneToOne(mappedBy = "dominio")
-    private Facturacion facturacion;
-
     public Dominio(){}
 
 }
