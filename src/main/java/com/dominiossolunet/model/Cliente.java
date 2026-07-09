@@ -1,10 +1,13 @@
 package com.dominiossolunet.model;
 
-import jakarta.annotation.Nullable;
+
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+
 
 import java.util.List;
 
@@ -15,13 +18,16 @@ import java.util.List;
 @Entity
 @Getter @Setter
 public class Cliente {
+
     @Id @Setter(AccessLevel.NONE)
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @NotNull
     private int id;
 
-    @Column(nullable = false)
+    @NotBlank
     private String nombre;
 
+    @NotBlank
     private String email;
 
     @OneToMany(mappedBy = "cliente")
