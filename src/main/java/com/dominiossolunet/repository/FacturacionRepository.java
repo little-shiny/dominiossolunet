@@ -17,7 +17,7 @@ public interface FacturacionRepository extends JpaRepository<Facturacion, Intege
 
 
     /**
-     * Query que busca todo lo que haya en función del estado de facturación
+     * Query que busca las entradas de la tabla facturacion dependiendo del estado
      */
     List<Facturacion> findByEstadoFacturacion(EstadoFacturacion estado);
 }
