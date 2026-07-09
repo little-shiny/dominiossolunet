@@ -25,7 +25,6 @@ public class DominioRepositoryTest {
         Cliente cliente = new Cliente();
         cliente.setNombre("Pepito");
         cliente.setEmail("pepito99@pepito.es");
-        cliente = clienteRepository.save(cliente);
 
         // crear un Dominio asociado a ese cliente
         Dominio dominio = new Dominio();
@@ -35,7 +34,7 @@ public class DominioRepositoryTest {
         dominio.setNombreDominio("pepitoysuscosas.com");
         dominioRepository.save(dominio);
 
-        //llamar al método derivado que quieres probar
+        //llamar al método derivado que se quiere probar
         List<Dominio> resultado = dominioRepository.findByEstadoAndFechaExpiracionBefore(
                 Estado.ACTIVO,
                 LocalDate.now().plusDays(20)
