@@ -33,4 +33,5 @@ public class TokenRenovacion {
     @NotNull
     private boolean usado;
 
+    public TokenRenovacion(){}
 }

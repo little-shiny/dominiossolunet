@@ -38,4 +38,6 @@ public class Dominio {
     @OneToOne(mappedBy = "dominio")
     private Facturacion facturacion;
 
+    public Dominio(){}
+
 }

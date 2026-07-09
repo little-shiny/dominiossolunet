@@ -28,4 +28,6 @@ public class Facturacion {
     @NotBlank
     private Dominio dominio;
     private String nota;
+
+    public Facturacion(){}
 }
