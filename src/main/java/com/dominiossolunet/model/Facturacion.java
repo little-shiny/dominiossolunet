@@ -25,7 +25,7 @@ public class Facturacion {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name= "id_dominio")
-    @NotBlank
+    @NotNull
     private Dominio dominio;
     private String nota;
 

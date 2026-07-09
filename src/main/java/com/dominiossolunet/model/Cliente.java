@@ -24,10 +24,10 @@ public class Cliente {
     @NotNull
     private int id;
 
-    @NotBlank
+    @NotNull
     private String nombre;
 
-    @NotBlank
+    @NotNull
     private String email;
 
     public Cliente(){}
