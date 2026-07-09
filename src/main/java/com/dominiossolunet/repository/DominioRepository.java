@@ -1,0 +1,17 @@
+package com.dominiossolunet.repository;
+
+import com.dominiossolunet.model.Dominio;
+import com.dominiossolunet.model.Estado;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.time.LocalDate;
+import java.util.List;
+
+public interface DominioRepository extends JpaRepository<Dominio, Integer> {
+
+    /**
+     * Método que genera una lista con los dominios según el estado elegido y la fecha de expiración
+     */
+    List<Dominio> findByEstadoAndFechaExpiracionBefore(Estado estado, LocalDate fecha);
+
+}
