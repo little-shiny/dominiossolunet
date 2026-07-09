@@ -13,7 +13,8 @@ public interface FacturacionRepository extends JpaRepository<Facturacion, Intege
     /**
      * Query que busca Facturación de un determinado dominio
      */
-    Optional<Facturacion> findByDominio(Dominio dominio);
+    Optional<Facturacion> findByDominio_NombreDominio(String nombreDominio);
+
 
     /**
      * Query que busca todo lo que haya en función del estado de facturación
