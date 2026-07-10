@@ -34,6 +34,8 @@ public class Dominio {
 
     private LocalDate ultimoAviso;
 
+    private Integer ultimoUmbralAvisado;
+
     public Dominio(){}
 
 }
