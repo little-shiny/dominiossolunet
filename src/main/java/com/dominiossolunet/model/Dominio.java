@@ -1,7 +1,5 @@
 package com.dominiossolunet.model;
 
-import com.dominiossolunet.model.enums.Estado;
-import com.dominiossolunet.model.enums.Registrador;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
@@ -37,10 +35,8 @@ public class Dominio {
     @NotNull
     private Registrador registrador;
 
-    // dice cuando fue el último envio y se usa para detectar si hay algún error en el cron.
     private LocalDate ultimoAviso;
 
-    // evita reenviar un umbral mas de dos veces SOLO DEBUG
     private Integer ultimoUmbralAvisado;
 
     public Dominio(){}

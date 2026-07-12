@@ -1,8 +1,6 @@
 package com.dominiossolunet.repository;
 
 import com.dominiossolunet.model.*;
-import com.dominiossolunet.model.enums.Estado;
-import com.dominiossolunet.model.enums.EstadoFacturacion;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
