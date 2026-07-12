@@ -1,6 +1,6 @@
 package com.dominiossolunet.repository;
 
-import com.dominiossolunet.model.EstadoFacturacion;
+import com.dominiossolunet.model.enums.EstadoFacturacion;
 import com.dominiossolunet.model.Facturacion;
 import org.springframework.data.jpa.repository.JpaRepository;
 

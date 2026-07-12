@@ -1,7 +1,7 @@
 package com.dominiossolunet.repository;
 
 import com.dominiossolunet.model.Dominio;
-import com.dominiossolunet.model.Estado;
+import com.dominiossolunet.model.enums.Estado;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;

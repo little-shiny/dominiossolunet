@@ -1,4 +1,4 @@
-package com.dominiossolunet.model;
+package com.dominiossolunet.model.enums;
 
 public enum EstadoFacturacion {
     PENDIENTE_FACTURAR,

@@ -1,5 +1,7 @@
 package com.dominiossolunet.model;
 
+import com.dominiossolunet.model.enums.Estado;
+import com.dominiossolunet.model.enums.Registrador;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;

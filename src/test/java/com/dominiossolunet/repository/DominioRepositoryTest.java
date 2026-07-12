@@ -2,7 +2,7 @@ package com.dominiossolunet.repository;
 
 import com.dominiossolunet.model.Cliente;
 import com.dominiossolunet.model.Dominio;
-import com.dominiossolunet.model.Estado;
+import com.dominiossolunet.model.enums.Estado;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.Test;
