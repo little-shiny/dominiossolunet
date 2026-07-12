@@ -37,8 +37,10 @@ public class Dominio {
     @NotNull
     private Registrador registrador;
 
+    // dice cuando fue el último envio y se usa para detectar si hay algún error en el cron.
     private LocalDate ultimoAviso;
 
+    // evita reenviar un umbral mas de dos veces SOLO DEBUG
     private Integer ultimoUmbralAvisado;
 
     public Dominio(){}
