@@ -1,8 +1,11 @@
-package com.dominiossolunet.repository;
+package com.dominiossolunet.src.test.java.com.dominiossolunet.repository;
 
 import com.dominiossolunet.model.*;
 import com.dominiossolunet.model.enums.Estado;
 import com.dominiossolunet.model.enums.EstadoFacturacion;
+import com.dominiossolunet.repository.ClienteRepository;
+import com.dominiossolunet.repository.DominioRepository;
+import com.dominiossolunet.repository.FacturacionRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -23,9 +26,11 @@ public class FacturacionRepositoryTest {
     @Autowired
     private FacturacionRepository facturacionRepository;
 
-    @Autowired ClienteRepository clienteRepository;
+    @Autowired
+    ClienteRepository clienteRepository;
 
-    @Autowired DominioRepository dominioRepository;
+    @Autowired
+    DominioRepository dominioRepository;
 
     @Test
     void guardarYRecuperarFacturacionPorDominio(){

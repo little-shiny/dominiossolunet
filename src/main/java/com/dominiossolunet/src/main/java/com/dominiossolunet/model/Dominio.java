@@ -1,5 +1,6 @@
-package com.dominiossolunet.model;
+package com.dominiossolunet.src.main.java.com.dominiossolunet.model;
 
+import com.dominiossolunet.model.Cliente;
 import com.dominiossolunet.model.enums.Estado;
 import com.dominiossolunet.model.enums.Registrador;
 import jakarta.persistence.*;

@@ -1,4 +1,4 @@
-package com.dominiossolunet.repository;
+package com.dominiossolunet.src.main.java.com.dominiossolunet.repository;
 
 import com.dominiossolunet.model.enums.EstadoFacturacion;
 import com.dominiossolunet.model.Facturacion;

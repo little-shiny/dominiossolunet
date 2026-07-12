@@ -1,5 +1,6 @@
-package com.dominiossolunet.model;
+package com.dominiossolunet.src.main.java.com.dominiossolunet.model;
 
+import com.dominiossolunet.model.Dominio;
 import com.dominiossolunet.model.enums.EstadoFacturacion;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;

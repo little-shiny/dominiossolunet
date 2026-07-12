@@ -1,10 +1,12 @@
-package com.dominiossolunet.repository;
+package com.dominiossolunet.src.test.java.com.dominiossolunet.repository;
 
 import com.dominiossolunet.model.Cliente;
 import com.dominiossolunet.model.Dominio;
 import com.dominiossolunet.model.enums.Estado;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.dominiossolunet.repository.ClienteRepository;
+import com.dominiossolunet.repository.DominioRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;

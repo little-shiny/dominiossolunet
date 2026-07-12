@@ -1,6 +1,7 @@
-package com.dominiossolunet.model;
+package com.dominiossolunet.src.main.java.com.dominiossolunet.model;
 
 
+import com.dominiossolunet.model.Dominio;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
