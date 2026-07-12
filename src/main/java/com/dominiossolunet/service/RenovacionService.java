@@ -2,6 +2,7 @@ package com.dominiossolunet.service;
 
 import com.dominiossolunet.repository.DominioRepository;
 import lombok.Value;
+
 import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Service;
 
