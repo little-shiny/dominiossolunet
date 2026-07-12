@@ -14,23 +14,28 @@ public class TokenRenovacion {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Getter(AccessLevel.NONE)
-    @NotNull
     private int id;
 
     @NotNull
+    @Column(nullable = false)
     private LocalDateTime fechaCreacion;
 
+    @NotNull
+    @Column(nullable = false)
     private LocalDateTime fechaExpiracion;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_dominio")
     @NotNull
+    @Column(nullable = false)
     private Dominio dominio;
 
     @NotNull
+    @Column(nullable = false)
     private String token;
 
     @NotNull
+    @Column(nullable = false)
     private boolean usado;
 
     public TokenRenovacion(){}
