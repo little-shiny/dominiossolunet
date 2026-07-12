@@ -20,6 +20,7 @@ public class Facturacion {
     @Enumerated(EnumType.STRING)
     @NotNull
     private EstadoFacturacion estadoFacturacion;
+
     private LocalDate fechaUltimaFactura;
 
     @OneToOne(fetch = FetchType.LAZY)

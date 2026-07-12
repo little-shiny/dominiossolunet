@@ -4,5 +4,6 @@ public enum Estado {
     ACTIVO,
     AVISO_ENVIADO,
     CLIENTE_ACEPTA,
-    EXPIRADO,
+    EXPIRADO_SIN_RESPUESTA,
+    BAJA,
 }

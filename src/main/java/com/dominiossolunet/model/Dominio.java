@@ -32,6 +32,9 @@ public class Dominio {
     @NotNull
     private String nombreDominio;
 
+    @NotNull
+    private Registrador registrador;
+
     private LocalDate ultimoAviso;
 
     private Integer ultimoUmbralAvisado;
