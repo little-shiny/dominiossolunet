@@ -14,4 +14,9 @@ public interface DominioRepository extends JpaRepository<Dominio, Integer> {
      */
     List<Dominio> findByEstadoAndFechaExpiracionBefore(Estado estado, LocalDate fecha);
 
+    /**
+     * query mas avanzada que incluye una lista de estados
+     */
+    List<Dominio> findByEstadoInAndFechaExpiracionBefore(List<Estado> estados, LocalDate fecha);
+
 }
