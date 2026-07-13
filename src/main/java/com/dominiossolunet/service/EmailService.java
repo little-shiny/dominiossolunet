@@ -11,14 +11,13 @@ public class EmailService {
     private  final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
     @Value("${spring.mail.username}")
-    private final String remitente;
+    private String remitente;
 
     //Constructor
 
-    public EmailService(JavaMailSender mailSender, TemplateEngine templateEngine, String remitente){
+    public EmailService(JavaMailSender mailSender, TemplateEngine templateEngine){
         this.mailSender = mailSender;
         this.templateEngine = templateEngine;
-        this.remitente = remitente;
     }
 
     // Métodos
