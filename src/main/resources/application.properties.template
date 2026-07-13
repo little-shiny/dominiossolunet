@@ -1,0 +1,4 @@
+spring.mail.host=CAMBIAME
+spring.mail.port=CAMBIAME
+spring.mail.username=CAMBIAME
+spring.mail.password=CAMBIAME
