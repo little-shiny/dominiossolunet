@@ -1,9 +1,0 @@
-package com.dominiossolunet.model;
-
-public enum Estado {
-    ACTIVO,
-    AVISO_ENVIADO,
-    CLIENTE_ACEPTA,
-    EXPIRADO_SIN_RESPUESTA,
-    BAJA,
-}
