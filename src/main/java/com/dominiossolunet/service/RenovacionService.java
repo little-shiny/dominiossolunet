@@ -26,7 +26,7 @@ public class RenovacionService {
     @Value("${renovacion.umbrales}")
     private List<Integer> umbrales;
 
-    private int umbralMaximo; // Se asignará en el @Postconstruct
+    private int umbralMaximo;
 
     //Constructor
     public RenovacionService(DominioRepository dominioRepository, TokenService tokenService) {
