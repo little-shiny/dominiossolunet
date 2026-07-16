@@ -1,5 +1,6 @@
 package com.dominiossolunet.service;
 
+import com.dominiossolunet.model.Dominio;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -22,7 +23,7 @@ public class EmailService {
 
     // Métodos
 
-    public boolean enviarAvisoRenovacion(){
+    public boolean enviarAvisoRenovacion(Dominio dominio){
 
     }
 
