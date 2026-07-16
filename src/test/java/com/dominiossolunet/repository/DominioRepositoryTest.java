@@ -5,6 +5,7 @@ import com.dominiossolunet.model.Dominio;
 import com.dominiossolunet.model.enums.Estado;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.dominiossolunet.model.enums.Registrador;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -38,6 +39,7 @@ public class DominioRepositoryTest {
         dominio.setEstado(Estado.ACTIVO);
         dominio.setFechaExpiracion(LocalDate.now().plusDays(10));
         dominio.setNombreDominio("pepitoysuscosas.com");
+        dominio.setRegistrador(Registrador.OTRO);
         entityManager.persistAndFlush(dominio);
 
         //TODO: cambiar a AssertionsJ
