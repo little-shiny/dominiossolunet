@@ -25,9 +25,8 @@ public class TokenRenovacion {
     private LocalDateTime fechaExpiracion;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_dominio")
+    @JoinColumn(name = "id_dominio",nullable = false)
     @NotNull
-    @Column(nullable = false)
     private Dominio dominio;
 
     @NotNull
