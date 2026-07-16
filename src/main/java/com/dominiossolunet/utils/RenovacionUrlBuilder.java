@@ -5,17 +5,16 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class RenovacionUrlBuilder {
-    @Value("${app.url.dominio}")
     final String urlBase;
+    final String urlRenovacion;
 
-    // Url que añade al dominio
-    final String urlRenovacion = "/renovacion/?t=";
-
-    public RenovacionUrlBuilder(String urlBase){
+    public RenovacionUrlBuilder(@Value("${app.url.dominio}") String urlBase,
+                                @Value("${app.url.renovacion}") String urlRenovacion){
         this.urlBase = urlBase;
+        this.urlRenovacion = urlRenovacion;
     }
 
-    public String contruirUrlConfirmacion(String token){
+    public String construirUrlConfirmacion(String token){
         return urlBase + urlRenovacion + token;
     }
 }

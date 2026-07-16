@@ -23,9 +23,9 @@ public class EmailService {
 
     // Métodos
 
-    public boolean enviarAvisoRenovacion(Dominio dominio){
+    /*public boolean enviarAvisoRenovacion(Dominio dominio){
 
     }
 
-    public boolean enviarNotificacionAdmin(){}
+    public boolean enviarNotificacionAdmin(){}*/
 }
