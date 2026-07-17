@@ -317,8 +317,7 @@
                             </p>
                             <!-- lista de dominios pendientes de renovacion -->
                             <ul th:each="dominio : ${listaDominios}">
-                                <li th:text="${dominio.nombreDominio}"></li>
-                            </ul>
+                                <li th:text="|${dominio.nombreDominio} expirará el ${#temporals.format(dominio.fechaExpiracion, 'dd/MM/yyyy')}|"></li>                            </ul>
                             <p>Para que podamos procesar la renovación, puede acceder desde el
                                 siguiente enlace para realizar la petición: </p>
 
