@@ -4,35 +4,30 @@ import com.dominiossolunet.model.Cliente;
 import com.dominiossolunet.model.Dominio;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.mail.javamail.MimeMessageHelper;
-import org.thymeleaf.context.Context;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
 import java.util.List;
 
 @Service
 public class EmailService {
-
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
 
     @Value("${spring.mail.username}")
     private String remitente;
 
-    //Constructor
-
-    public EmailService(JavaMailSender mailSender, TemplateEngine templateEngine){
+    public EmailService(JavaMailSender mailSender, TemplateEngine templateEngine) {
         this.mailSender = mailSender;
         this.templateEngine = templateEngine;
     }
 
-    // Métodos
-
-    public boolean enviarAvisoRenovacion(Cliente cliente, List<Dominio> dominiosRenovar, String urlRenovacion){
+    public boolean enviarAvisoRenovacion(Cliente cliente, List<Dominio> dominiosRenovar, String urlRenovacion) {
 
         boolean enviado = false;
 
@@ -42,7 +37,7 @@ public class EmailService {
 
             //Context para la plantilla de thymeleaf
             Context context = new Context();
-            context.setVariable("listaDominios", dominiosRenovar );
+            context.setVariable("listaDominios", dominiosRenovar);
             context.setVariable("urlRenovacion", urlRenovacion);
 
             String html = templateEngine.process("email/aviso-renovacion", context);
@@ -59,9 +54,9 @@ public class EmailService {
         } catch (MessagingException e) {
             throw new RuntimeException(e);
         }
-
         return enviado;
     }
 
-    public boolean enviarNotificacionAdmin(){}
+    // Todo completar aviso
+//    public boolean enviarNotificacionAdmin(){}
 }
