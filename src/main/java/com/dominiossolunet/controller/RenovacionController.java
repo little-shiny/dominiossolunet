@@ -15,16 +15,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class RenovacionController {
 
     private final TokenService tokenService;
-    public RenovacionController(TokenService tokenService1){
+
+    public RenovacionController(TokenService tokenService1) {
         this.tokenService = tokenService1;
     }
 
-    //todo GET al pinchar en el enlace del mail y validar el token
     @GetMapping("${app.url.dominio}")
-    public String mostrarFormulario(@RequestParam String token, Model model){
+    public String mostrarFormulario(@RequestParam String token, Model model) {
 
         ResultadoValidacion resultadoValidacion = tokenService.validarToken(token);
-        
+
         // Se añaden los datos en el model
         model.addAttribute("resultado", resultadoValidacion.resultado());
 
