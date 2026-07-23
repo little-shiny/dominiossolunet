@@ -1,7 +1,7 @@
 package com.dominiossolunet.controller;
 
 import org.springframework.ui.Model;
-import com.dominiossolunet.model.enums.ResultadoValidacionToken;
+import com.dominiossolunet.dto.ResultadoValidacion;
 import com.dominiossolunet.service.TokenService;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -23,19 +23,18 @@ public class RenovacionController {
     @GetMapping("${app.url.dominio}")
     public String mostrarFormulario(@RequestParam String token, Model model){
 
-        // Verificación del token
-        ResultadoValidacionToken resultadoValidacionToken = tokenService.validarToken(token);
+        ResultadoValidacion resultadoValidacion = tokenService.validarToken(token);
         
         // Se añaden los datos en el model
-        model.addAttribute("resultado", resultadoValidacionToken.name());
+        model.addAttribute("resultado", resultadoValidacion.resultado());
 
         // Se rellenan los campos de la vista en función del resultado
-        switch (resultadoValidacionToken) {
+        switch (resultadoValidacion.resultado()) {
             case VALIDO -> {
                 //necesito cliente y dominios asociados al token
-                model.addAttribute("cliente",tokenService.);
-                model.addAttribute("dominios",);
-                model.addAttribute("token",)
+                model.addAttribute("cliente", resultadoValidacion.token().getCliente());
+                model.addAttribute("dominios", resultadoValidacion.token().getCliente().getDominios());
+                model.addAttribute("token", resultadoValidacion.token().getToken());
             }
             case USADO, EXPIRADO, NO_ENCONTRADO -> {
                 //
