@@ -29,8 +29,6 @@ public class EmailService {
 
     public boolean enviarAvisoRenovacion(Cliente cliente, List<Dominio> dominiosRenovar, String urlRenovacion) {
 
-        boolean enviado = false;
-
         try {
             MimeMessage mensaje = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, true);
@@ -49,14 +47,17 @@ public class EmailService {
             helper.addInline("logosolunet", new ClassPathResource("static/images/logosolunet.png"));
             mailSender.send(mensaje);
 
-            enviado = true;
+            return true;
 
         } catch (MessagingException e) {
-            throw new RuntimeException(e);
+            // todo logger
+            return false;
         }
-        return enviado;
     }
 
+
     // Todo completar aviso
-//    public boolean enviarNotificacionAdmin(){}
+//    public boolean enviarNotificacionAdmin(Cliente cliente, List<Dominio> dominios){
+//
+//    }
 }
