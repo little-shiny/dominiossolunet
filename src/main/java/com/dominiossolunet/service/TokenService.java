@@ -1,7 +1,7 @@
 package com.dominiossolunet.service;
 
 import com.dominiossolunet.model.Dominio;
-import com.dominiossolunet.model.TokenRenovacion;
+import com.dominiossolunet.model.TokenCliente;
 import com.dominiossolunet.repository.TokenRenovacionRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -26,8 +26,8 @@ public class TokenService {
         this.tokenRenovacionRepository = tokenRenovacionRepository;
     }
 
-    public TokenRenovacion generarToken(Dominio dominio){
-        TokenRenovacion nuevoToken = new TokenRenovacion();
+    public TokenCliente generarToken(Dominio dominio){
+        TokenCliente nuevoToken = new TokenCliente();
 
         nuevoToken.setFechaCreacion(LocalDateTime.now());
         nuevoToken.setFechaExpiracion(LocalDateTime.now().plusDays(diasExpiracionToken));

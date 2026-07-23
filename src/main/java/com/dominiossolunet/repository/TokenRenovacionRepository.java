@@ -1,15 +1,15 @@
 package com.dominiossolunet.repository;
 
 import com.dominiossolunet.model.Dominio;
-import com.dominiossolunet.model.TokenRenovacion;
+import com.dominiossolunet.model.TokenCliente;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.Optional;
 
-public interface TokenRenovacionRepository extends JpaRepository<TokenRenovacion, Integer> {
-    Optional<TokenRenovacion> findByToken(String token);
+public interface TokenRenovacionRepository extends JpaRepository<TokenCliente, Integer> {
+    Optional<TokenCliente> findByToken(String token);
 
     /**
      * Busca tokens NO USADOS de un determinado dominio
      */
-    Optional<TokenRenovacion> findByDominioAndUsado(Dominio dominio, boolean usado);
+    Optional<TokenCliente> findByDominioAndUsado(Dominio dominio, boolean usado);
 }

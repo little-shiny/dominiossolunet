@@ -1,7 +1,7 @@
 package com.dominiossolunet.service;
 
 import com.dominiossolunet.model.Dominio;
-import com.dominiossolunet.model.TokenRenovacion;
+import com.dominiossolunet.model.TokenCliente;
 import com.dominiossolunet.model.enums.Estado;
 import com.dominiossolunet.repository.DominioRepository;
 import jakarta.annotation.PostConstruct;
@@ -76,7 +76,7 @@ public class RenovacionService {
                 dominio.setUltimoUmbralAvisado(umbralQueToca);
                 dominio.setUltimoAviso(LocalDate.now()); // dato informativo
 
-                TokenRenovacion token = tokenService.generarToken(dominio);
+                TokenCliente token = tokenService.generarToken(dominio);
             }
         }
     }
