@@ -23,11 +23,25 @@ public class RenovacionController {
     @GetMapping("${app.url.dominio}")
     public String mostrarFormulario(@RequestParam String token, Model model){
 
+        // Verificación del token
         ResultadoValidacionToken resultadoValidacionToken = tokenService.validarToken(token);
-        // Verificar token
         
-        // datos que se meten en el model
-        // devolver el nombre de la vista
+        // Se añaden los datos en el model
+        model.addAttribute("resultado", resultadoValidacionToken.name());
+
+        // Se rellenan los campos de la vista en función del resultado
+        switch (resultadoValidacionToken) {
+            case VALIDO -> {
+                //necesito cliente y dominios asociados al token
+                model.addAttribute("cliente",tokenService.);
+                model.addAttribute("dominios",);
+                model.addAttribute("token",)
+            }
+            case USADO, EXPIRADO, NO_ENCONTRADO -> {
+                //
+            }
+        }
+        return "web/renovacion-confirmacion-cliente";
     }
 
     //todo POST confirmar
