@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirmación de renovación de dominios</title>
+</head>
+<body>
+
+<div th:switch="${resultado}">
+
+    <div th:case="'VALIDO'">
+        <h2>Renovación de dominio/s próximos a expirar</h2>
+        <p>Buenos días<span th:text="${cliente.nombre}">Nombre</span>, estos son sus dominios próximos a
+            expirar:</p>
+        <ul>
+            <li th:each="dominio : ${dominios}" th:text="${dominio.nombreDominio}">dominio.com</li>
+        </ul>
+        <form method="post" th:action="@{${@environment.getProperty('app.url.renovacion')}}">
+            <input type="hidden" name="token" th:value="${token}"/>
+            <button type="submit">Confirmar renovación</button>
+        </form>
+    </div>
+
+    <div th:case="'USADO'">
+        <h2>Este enlace ya fue utilizado</h2>
+        <p>Ya confirmaste esta renovación anteriormente. Si crees que es un error, contacta con nosotros.</p>
+    </div>
+
+    <div th:case="'EXPIRADO'">
+        <h2>Enlace caducado</h2>
+        <p>Este enlace de confirmación ha expirado. Ponte en contacto con nosotros para generar uno nuevo.</p>
+    </div>
+
+    <div th:case="*">
+        <h2>Enlace no válido</h2>
+        <p>No hemos podido encontrar este enlace de confirmación.</p>
+    </div>
+
+</div>
+
+</body>
+</html>
