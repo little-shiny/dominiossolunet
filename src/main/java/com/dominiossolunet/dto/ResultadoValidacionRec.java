@@ -8,5 +8,5 @@ import com.dominiossolunet.model.TokenCliente;
  * @param resultado
  * @param token
  */
-public record ResultadoValidacion(com.dominiossolunet.model.enums.ResultadoValidacion resultado, TokenCliente token) {
+public record ResultadoValidacionRec(com.dominiossolunet.model.enums.ResultadoValidacion resultado, TokenCliente token) {
 }

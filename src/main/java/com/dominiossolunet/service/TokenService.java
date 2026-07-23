@@ -1,5 +1,6 @@
 package com.dominiossolunet.service;
 
+import com.dominiossolunet.dto.ResultadoValidacionRec;
 import com.dominiossolunet.model.Dominio;
 import com.dominiossolunet.model.TokenCliente;
 import com.dominiossolunet.model.enums.ResultadoValidacion;
@@ -39,7 +40,7 @@ public class TokenService {
         return tokenRenovacionRepository.save(nuevoToken);
     }
 
-    public com.dominiossolunet.dto.ResultadoValidacion validarToken(String token){
+    public ResultadoValidacionRec validarToken(String token){
 
         Optional<TokenCliente> resultado = tokenRenovacionRepository.findByToken(token);
         TokenCliente tokenEncontrado;
@@ -48,14 +49,14 @@ public class TokenService {
             tokenEncontrado = resultado.get();
 
             if (tokenEncontrado.isUsado()) {
-                return new com.dominiossolunet.dto.ResultadoValidacion(ResultadoValidacion.USADO, tokenEncontrado);
+                return new ResultadoValidacionRec(ResultadoValidacion.USADO, tokenEncontrado);
             } else if (tokenEncontrado.getFechaExpiracion().isBefore(LocalDateTime.now())) {
-                return new com.dominiossolunet.dto.ResultadoValidacion(ResultadoValidacion.EXPIRADO, tokenEncontrado);
+                return new ResultadoValidacionRec(ResultadoValidacion.EXPIRADO, tokenEncontrado);
             }
-            return new com.dominiossolunet.dto.ResultadoValidacion(ResultadoValidacion.VALIDO, tokenEncontrado);
+            return new ResultadoValidacionRec(ResultadoValidacion.VALIDO, tokenEncontrado);
 
         } else {
-            return new com.dominiossolunet.dto.ResultadoValidacion(ResultadoValidacion.NO_ENCONTRADO, null);
+            return new ResultadoValidacionRec(ResultadoValidacion.NO_ENCONTRADO, null);
         }
     }
 }
