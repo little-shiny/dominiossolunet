@@ -37,3 +37,4 @@ build/
 /pom.xml
 /instrucciones.md
 /instrucciones para servidor.md
+/src/test/resources/application.properties

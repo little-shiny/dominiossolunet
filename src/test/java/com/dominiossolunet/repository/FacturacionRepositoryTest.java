@@ -3,6 +3,7 @@ package com.dominiossolunet.repository;
 import com.dominiossolunet.model.*;
 import com.dominiossolunet.model.enums.Estado;
 import com.dominiossolunet.model.enums.EstadoFacturacion;
+import com.dominiossolunet.model.enums.Registrador;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -42,6 +43,7 @@ public class FacturacionRepositoryTest {
         dominio.setNombreDominio("ana.com");
         dominio.setEstado(Estado.ACTIVO);
         dominio.setCliente(cliente1);
+        dominio.setRegistrador(Registrador.DOMITECA);
         Dominio dominioGuardado = entityManager.persistAndFlush(dominio);
         assertThat(dominioGuardado.getId()).isNotZero();
 
@@ -81,6 +83,7 @@ public class FacturacionRepositoryTest {
         dominio1.setNombreDominio("ana.com");
         dominio1.setEstado(Estado.ACTIVO);
         dominio1.setCliente(cliente1);
+        dominio1.setRegistrador(Registrador.DOMITECA);
         Dominio dominioGuardado1 = entityManager.persistAndFlush(dominio1);
         assertThat(dominioGuardado1.getId()).isNotZero();
 
@@ -89,6 +92,7 @@ public class FacturacionRepositoryTest {
         dominio2.setNombreDominio("anaproyectos.com");
         dominio2.setEstado(Estado.CLIENTE_ACEPTA);
         dominio2.setCliente(cliente1);
+        dominio2.setRegistrador(Registrador.DOMITECA);
         Dominio dominioGuardado2 = entityManager.persistAndFlush(dominio2);
         assertThat(dominioGuardado2.getId()).isNotZero();
 
