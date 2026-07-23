@@ -1,6 +1,6 @@
 package com.dominiossolunet.model.enums;
 
-public enum ResultadoValidacionToken {
+public enum ResultadoValidacion {
     VALIDO,
     USADO,
     EXPIRADO,
