@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.Setter;
 import jakarta.validation.constraints.NotNull;
 
+import java.util.List;
+
 /**
  * Model Class that represents a Client data type
  */
@@ -17,7 +19,6 @@ public class Cliente {
 
     @Id @Setter(AccessLevel.NONE)
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @NotNull
     private int id;
 
     @NotNull
@@ -25,6 +26,9 @@ public class Cliente {
 
     @NotNull
     private String email;
+
+    @OneToMany(mappedBy = "cliente")
+    private List<Dominio> dominios;
 
     public Cliente(){}
 
