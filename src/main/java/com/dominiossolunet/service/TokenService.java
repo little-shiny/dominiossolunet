@@ -4,6 +4,7 @@ import com.dominiossolunet.dto.ResultadoValidacionRec;
 import com.dominiossolunet.model.Dominio;
 import com.dominiossolunet.model.TokenCliente;
 import com.dominiossolunet.model.TokenDominio;
+import com.dominiossolunet.model.enums.EstadoAvisoRenovacion;
 import com.dominiossolunet.model.enums.ResultadoValidacion;
 import com.dominiossolunet.repository.TokenClienteRepository;
 import com.dominiossolunet.repository.TokenDominioRepository;
@@ -88,6 +89,15 @@ public class TokenService {
         }
 
         return tokenDominioRepository.findByDominio_IdIn(idsDominios);
+    }
+
+    @Transactional
+    public void marcarEstadoRenovacion(TokenDominio tokenDominio, EstadoAvisoRenovacion estado){
+
+        TokenDominio tokenDominioResultado = tokenDominioRepository.findById(tokenDominio.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Token no encontrado con la id : " + tokenDominio.getId()));
+
+        tokenDominioResultado.setEstadoAvisoRenovacion(estado);
     }
 }
 
