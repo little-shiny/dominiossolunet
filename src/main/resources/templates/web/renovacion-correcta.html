@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Resultado de la renovación de dominios</title>
+</head>
+<body>
+
+<div th:switch="${resultado}">
+
+    <div th:case="'VALIDO'">
+        <h2>La solicitud de renovación o cancelación ha sido registrada</h2>
+        <p>Para cualquier duda o consulta puede consultarnos en facturacion@solunet.es</p>
+        <p>Gracias por su atención</p>
+    </div>
+
+    <div th:case="'USADO'">
+        <h2>Este enlace ya fue utilizado</h2>
+        <p>Ya confirmaste esta renovación anteriormente. Si crees que es un error, contacta con nosotros en
+            facturacion@solunet.es
+            .</p>
+    </div>
+
+    <div th:case="'EXPIRADO'">
+        <h2>Enlace caducado</h2>
+        <p>Este enlace de confirmación ha expirado. Ponte en contacto con nosotros para generar uno nuevo en
+            facturacion@solunet.es.</p>
+    </div>
+
+    <div th:case="*">
+        <h2>Enlace no válido</h2>
+        <p>No hemos podido encontrar este enlace de confirmación. Ponte en ocntacto con nosotros en facturacion@solunet.es</p>
+    </div>
+
+</div>
+
+</body>
+</html>
