@@ -5,7 +5,6 @@ import com.dominiossolunet.model.TokenDominio;
 import com.dominiossolunet.model.enums.EstadoAvisoRenovacion;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface TokenDominioRepository extends JpaRepository<TokenDominio, Integer> {
@@ -18,6 +17,4 @@ public interface TokenDominioRepository extends JpaRepository<TokenDominio, Inte
      * @param ids
      * @return lista TokenDominio
      */
-    List<TokenDominio> findByDominio_IdIn(List<Integer> ids);
-
 }
