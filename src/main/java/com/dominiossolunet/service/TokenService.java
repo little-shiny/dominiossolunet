@@ -3,15 +3,16 @@ package com.dominiossolunet.service;
 import com.dominiossolunet.dto.ResultadoValidacionRec;
 import com.dominiossolunet.model.Dominio;
 import com.dominiossolunet.model.TokenCliente;
+import com.dominiossolunet.model.TokenDominio;
 import com.dominiossolunet.model.enums.ResultadoValidacion;
 import com.dominiossolunet.repository.TokenClienteRepository;
+import com.dominiossolunet.repository.TokenDominioRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Métodos a implementar: generar un nuevo token, validarlo(que existe, que no ha caducado, que no está usado
@@ -21,13 +22,15 @@ import java.util.UUID;
 public class TokenService {
 
     private final TokenClienteRepository tokenClienteRepository; //final porque va en el constructor y es unico
+    private final TokenDominioRepository tokenDominioRepository;
 
     @Value("${token.dias-expiracion}")
     private int diasExpiracionToken;
 
     //Constructor
-    public TokenService(TokenClienteRepository tokenClienteRepository) {
+    public TokenService(TokenClienteRepository tokenClienteRepository, TokenDominioRepository tokenDominioRepository) {
         this.tokenClienteRepository = tokenClienteRepository;
+        this.tokenDominioRepository = tokenDominioRepository;
     }
 
     public TokenCliente generarToken(Dominio dominio){
@@ -70,6 +73,21 @@ public class TokenService {
 
         tokenCliente.setUsado(true);
         // No necesitamos save (dirty checking)
+    }
+
+    /**
+     * Devuelve una lista de TokenDominios mediante los id_dominio que se introducen por parámetro.
+     * Acepta empty
+     * @param idsDominios
+     * @return emptyList si es vacío, Lista de TokenDominios
+     */
+    public List<TokenDominio> obtieneTokenDominiosPorIdDominio(List<Integer> idsDominios){
+
+        if(idsDominios == null || idsDominios.isEmpty()){
+            return Collections.emptyList();
+        }
+
+        return tokenDominioRepository.findByDominio_IdIn(idsDominios);
     }
 }
 
