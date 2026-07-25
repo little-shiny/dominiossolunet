@@ -4,7 +4,6 @@ import com.dominiossolunet.dto.ResultadoValidacionRec;
 import com.dominiossolunet.model.Dominio;
 import com.dominiossolunet.model.TokenCliente;
 import com.dominiossolunet.model.TokenDominio;
-import com.dominiossolunet.model.enums.EstadoAvisoRenovacion;
 import com.dominiossolunet.model.enums.ResultadoValidacion;
 import com.dominiossolunet.repository.TokenClienteRepository;
 import com.dominiossolunet.repository.TokenDominioRepository;
@@ -23,7 +22,6 @@ import java.util.*;
 public class TokenService {
 
     private final TokenClienteRepository tokenClienteRepository; //final porque va en el constructor y es unico
-    private final TokenDominioRepository tokenDominioRepository;
 
     @Value("${token.dias-expiracion}")
     private int diasExpiracionToken;
@@ -31,7 +29,6 @@ public class TokenService {
     //Constructor
     public TokenService(TokenClienteRepository tokenClienteRepository, TokenDominioRepository tokenDominioRepository) {
         this.tokenClienteRepository = tokenClienteRepository;
-        this.tokenDominioRepository = tokenDominioRepository;
     }
 
     public TokenCliente generarToken(Dominio dominio){
@@ -76,28 +73,8 @@ public class TokenService {
         // No necesitamos save (dirty checking)
     }
 
-    /**
-     * Devuelve una lista de TokenDominios mediante los id_dominio que se introducen por parámetro.
-     * Acepta empty
-     * @param idsDominios
-     * @return emptyList si es vacío, Lista de TokenDominios
-     */
-    public List<TokenDominio> obtieneTokenDominiosPorIdDominio(List<Integer> idsDominios){
-
-        if(idsDominios == null || idsDominios.isEmpty()){
-            return Collections.emptyList();
-        }
-
-        return tokenDominioRepository.findByDominio_IdIn(idsDominios);
-    }
-
-    @Transactional
-    public void marcarEstadoRenovacion(TokenDominio tokenDominio, EstadoAvisoRenovacion estado){
-
-        TokenDominio tokenDominioResultado = tokenDominioRepository.findById(tokenDominio.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Token no encontrado con la id : " + tokenDominio.getId()));
-
-        tokenDominioResultado.setEstadoAvisoRenovacion(estado);
+    public List<TokenDominio> obtenerListaDeTokensDominioPorTokenCLiente(TokenCliente token) {
+        //todo
     }
 }
 

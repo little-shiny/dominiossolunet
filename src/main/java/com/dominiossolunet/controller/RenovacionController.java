@@ -1,17 +1,26 @@
 package com.dominiossolunet.controller;
 
-import org.springframework.ui.Model;
 import com.dominiossolunet.dto.ResultadoValidacionRec;
+import com.dominiossolunet.model.TokenDominio;
+import com.dominiossolunet.model.enums.EstadoAvisoRenovacion;
 import com.dominiossolunet.service.TokenService;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 
 /**
  * Controller para la interaccion de la renovacion con el cliente
  *
  */
 @Controller
+@RequestMapping("${app.url.renovacion}")
 public class RenovacionController {
 
     private final TokenService tokenService;
@@ -20,7 +29,13 @@ public class RenovacionController {
         this.tokenService = tokenService1;
     }
 
-    @GetMapping("${app.url.dominio}")
+    /**
+     * GET informacion y validar token para mostrar página de renovacion al cliente
+     * @param token
+     * @param model
+     * @return
+     */
+    @GetMapping
     public String mostrarFormulario(@RequestParam String token, Model model) {
 
         ResultadoValidacionRec resultadoValidacionRec = tokenService.validarToken(token);
@@ -43,6 +58,46 @@ public class RenovacionController {
         return "web/renovacion-confirmacion-cliente";
     }
 
-    //todo POST confirmar
+    /**
+     * POST al enviar el formulario que confirma la renovacion de uno o varios dominios
+     * Vuelve a validar el token y marca como usado el token si el cliente ha terminado el formulario
+     * en RequestParam required es false para qye sea null y no lance excepcion
+     */
+    @PostMapping("/enviar")
+    public String EnviarFormulario(@RequestParam(name = "dominios", required = false) List<Integer> dominiosMarcados,
+                              String token, Model model){
+
+        // Inicialización del requestParam
+        if(dominiosMarcados == null){
+            dominiosMarcados = new ArrayList<>();
+        }
+        ResultadoValidacionRec resultadoValidacionRec = tokenService.validarToken(token);
+        switch(resultadoValidacionRec.resultado()){
+            case EXPIRADO, USADO, NO_ENCONTRADO -> {}
+            case VALIDO -> {
+
+                model.addAttribute("resultado", resultadoValidacionRec.resultado());
+                HashSet<Integer> setTokens = new HashSet<>(dominiosMarcados);
+
+                // obtener la lista de TokenDominio asociada a ese Tokencliente
+                List<TokenDominio> tokenDominioList =
+                        tokenService.obtenerListaDeTokensDominioPorTokenCLiente(resultadoValidacionRec.token());
+
+                for(TokenDominio td : tokenDominioList){
+                    EstadoAvisoRenovacion estado = (setTokens.contains(td.getDominio().getId())) ?
+                            EstadoAvisoRenovacion.CONFIRMADO :
+                            EstadoAvisoRenovacion.RECHAZADO;
+                    td.setEstadoAvisoRenovacion(estado);
+                }
+
+                tokenService.marcarComoUsado(resultadoValidacionRec.token().getToken());
+            }
+        }
+
+        //TODO mover bloque desde el hashset hasta marcado de usado a tokenservice. TODO limpiar codigo basura en
+        // repository
+        return "web/renovacion-correcta";
+
+    }
     //todo Post rechazar
 }
