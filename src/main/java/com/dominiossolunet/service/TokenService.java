@@ -7,6 +7,7 @@ import com.dominiossolunet.model.enums.ResultadoValidacion;
 import com.dominiossolunet.repository.TokenClienteRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -58,6 +59,17 @@ public class TokenService {
         } else {
             return new ResultadoValidacionRec(ResultadoValidacion.NO_ENCONTRADO, null);
         }
+    }
+
+    // Reemplazable por el record en futuro
+    @Transactional
+    public void marcarComoUsado(String token){
+
+        TokenCliente tokenCliente = tokenClienteRepository.findByToken(token)
+                .orElseThrow(() -> new IllegalArgumentException("Token no encontrado: " + token));
+
+        tokenCliente.setUsado(true);
+        // No necesitamos save (dirty checking)
     }
 }
 
