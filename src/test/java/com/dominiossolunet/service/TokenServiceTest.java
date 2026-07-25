@@ -4,7 +4,7 @@ import com.dominiossolunet.dto.ResultadoValidacionRec;
 import com.dominiossolunet.model.Cliente;
 import com.dominiossolunet.model.TokenCliente;
 import com.dominiossolunet.model.enums.ResultadoValidacion;
-import com.dominiossolunet.repository.TokenRenovacionRepository;
+import com.dominiossolunet.repository.TokenClienteRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,7 +21,7 @@ import static org.mockito.Mockito.when;
 class TokenServiceTest {
 
     @Mock
-    private TokenRenovacionRepository tokenRenovacionRepository;
+    private TokenClienteRepository tokenClienteRepository;
 
     @InjectMocks
     private TokenService tokenService;
@@ -42,7 +42,7 @@ class TokenServiceTest {
         token.setFechaExpiracion(LocalDateTime.now().plusDays(1));
         token.setCliente(cliente);
 
-        when(tokenRenovacionRepository.findByToken("abc123")).thenReturn(Optional.of(token));
+        when(tokenClienteRepository.findByToken("abc123")).thenReturn(Optional.of(token));
 
         ResultadoValidacionRec resultado = tokenService.validarToken("abc123");
 

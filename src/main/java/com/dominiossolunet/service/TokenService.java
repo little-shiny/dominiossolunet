@@ -4,7 +4,7 @@ import com.dominiossolunet.dto.ResultadoValidacionRec;
 import com.dominiossolunet.model.Dominio;
 import com.dominiossolunet.model.TokenCliente;
 import com.dominiossolunet.model.enums.ResultadoValidacion;
-import com.dominiossolunet.repository.TokenRenovacionRepository;
+import com.dominiossolunet.repository.TokenClienteRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -19,14 +19,14 @@ import java.util.UUID;
 @Service
 public class TokenService {
 
-    private final TokenRenovacionRepository tokenRenovacionRepository; //final porque va en el constructor y es unico
+    private final TokenClienteRepository tokenClienteRepository; //final porque va en el constructor y es unico
 
     @Value("${token.dias-expiracion}")
     private int diasExpiracionToken;
 
     //Constructor
-    public TokenService(TokenRenovacionRepository tokenRenovacionRepository) {
-        this.tokenRenovacionRepository = tokenRenovacionRepository;
+    public TokenService(TokenClienteRepository tokenClienteRepository) {
+        this.tokenClienteRepository = tokenClienteRepository;
     }
 
     public TokenCliente generarToken(Dominio dominio){
@@ -37,12 +37,12 @@ public class TokenService {
         nuevoToken.setToken(UUID.randomUUID().toString());
         nuevoToken.setUsado(false);
 
-        return tokenRenovacionRepository.save(nuevoToken);
+        return tokenClienteRepository.save(nuevoToken);
     }
 
     public ResultadoValidacionRec validarToken(String token){
 
-        Optional<TokenCliente> resultado = tokenRenovacionRepository.findByToken(token);
+        Optional<TokenCliente> resultado = tokenClienteRepository.findByToken(token);
         TokenCliente tokenEncontrado;
 
         if (resultado.isPresent()){
