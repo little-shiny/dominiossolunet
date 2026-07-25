@@ -32,7 +32,7 @@ public class TokenDominio {
 
     @NotNull
     @Enumerated(EnumType.STRING)
-    private EstadoAvisoRenovacion estado;
+    private EstadoAvisoRenovacion estadoAvisoRenovacion;
 
     private LocalDateTime fechaInteraccionCliente;
 }
