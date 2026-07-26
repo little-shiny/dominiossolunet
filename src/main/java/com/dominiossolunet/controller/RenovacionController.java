@@ -64,12 +64,12 @@ public class RenovacionController {
      * en RequestParam required es false para qye sea null y no lance excepcion
      */
     @PostMapping("/enviar")
-    public String EnviarFormulario(@RequestParam(name = "dominios", required = false) List<Integer> dominiosMarcados,
+    public String EnviarFormulario(@RequestParam(name = "dominios", required = false) List<Integer> idsDominiosMarcados,
                               String token, Model model){
 
         // Inicialización del requestParam
-        if(dominiosMarcados == null){
-            dominiosMarcados = new ArrayList<>();
+        if(idsDominiosMarcados == null){
+            idsDominiosMarcados = new ArrayList<>();
         }
         ResultadoValidacionRec resultadoValidacionRec = tokenService.validarToken(token);
         switch(resultadoValidacionRec.resultado()){
@@ -77,11 +77,11 @@ public class RenovacionController {
             case VALIDO -> {
 
                 model.addAttribute("resultado", resultadoValidacionRec.resultado());
-                HashSet<Integer> setTokens = new HashSet<>(dominiosMarcados);
+                HashSet<Integer> setTokens = new HashSet<>(idsDominiosMarcados);
 
                 // obtener la lista de TokenDominio asociada a ese Tokencliente
                 List<TokenDominio> tokenDominioList =
-                        tokenService.obtenerListaDeTokensDominioPorTokenCLiente(resultadoValidacionRec.token());
+                        tokenService.obtenerTokenDominioPorTokenCliente(resultadoValidacionRec.token());
 
                 for(TokenDominio td : tokenDominioList){
                     EstadoAvisoRenovacion estado = (setTokens.contains(td.getDominio().getId())) ?
@@ -94,8 +94,7 @@ public class RenovacionController {
             }
         }
 
-        //TODO mover bloque desde el hashset hasta marcado de usado a tokenservice. TODO limpiar codigo basura en
-        // repository
+        //TODO mover bloque desde el hashset hasta marcado de usado a tokenservice.
         return "web/renovacion-correcta";
 
     }

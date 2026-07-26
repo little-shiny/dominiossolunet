@@ -4,6 +4,7 @@ import com.dominiossolunet.dto.ResultadoValidacionRec;
 import com.dominiossolunet.model.Dominio;
 import com.dominiossolunet.model.TokenCliente;
 import com.dominiossolunet.model.TokenDominio;
+import com.dominiossolunet.model.enums.EstadoAvisoRenovacion;
 import com.dominiossolunet.model.enums.ResultadoValidacion;
 import com.dominiossolunet.repository.TokenClienteRepository;
 import com.dominiossolunet.repository.TokenDominioRepository;
@@ -33,7 +34,7 @@ public class TokenService {
         this.tokenDominioRepository = tokenDominioRepository;
     }
 
-    public TokenCliente generarToken(Dominio dominio){
+    public TokenCliente generarToken(Dominio dominio) {
         TokenCliente nuevoToken = new TokenCliente();
 
         nuevoToken.setFechaCreacion(LocalDateTime.now());
@@ -44,12 +45,12 @@ public class TokenService {
         return tokenClienteRepository.save(nuevoToken);
     }
 
-    public ResultadoValidacionRec validarToken(String token){
+    public ResultadoValidacionRec validarToken(String token) {
 
         Optional<TokenCliente> resultado = tokenClienteRepository.findByToken(token);
         TokenCliente tokenEncontrado;
 
-        if (resultado.isPresent()){
+        if (resultado.isPresent()) {
             tokenEncontrado = resultado.get();
 
             if (tokenEncontrado.isUsado()) {
@@ -66,7 +67,7 @@ public class TokenService {
 
     // Reemplazable por el record en futuro
     @Transactional
-    public void marcarComoUsado(String token){
+    public void marcarComoUsado(String token) {
 
         TokenCliente tokenCliente = tokenClienteRepository.findByToken(token)
                 .orElseThrow(() -> new IllegalArgumentException("Token no encontrado: " + token));
@@ -74,8 +75,39 @@ public class TokenService {
         tokenCliente.setUsado(true);
         // No necesitamos save (dirty checking)
     }
-    public List<TokenDominio> obtenerListaDeTokensDominioPorTokenCLiente(TokenCliente token) {
+
+    public List<TokenDominio> obtenerTokenDominioPorTokenCliente(TokenCliente token) {
         return tokenDominioRepository.findByTokenCliente(token);
+    }
+
+    /**
+     * Metodo que a partir de una lista de integers con las ids de los dominios marcados por el usuario marca cada
+     * uno de los TokenDominio como tramite aceptado o rechazado según el cliente haya especificado
+     */
+    @Transactional
+    public void marcaEstadoRenovacionPorListaIdDominio(List<Integer> idsDominiosMarcadosCliente,
+                                                       ResultadoValidacionRec resultadoValidacion) {
+
+        // Se usa un Set que se crea a partir de la lista que obtenemos al enviar el formulario
+        HashSet<Integer> idsMarcados = new HashSet<>(idsDominiosMarcadosCliente);
+
+        // obtener la lista de TODOS los TokenDominio asociada a ese TokenCliente (No solo los marcados)
+        List<TokenDominio> tokenDominioListaCompleta =
+                tokenDominioRepository.findByTokenCliente(resultadoValidacion.token());
+
+        // Para cada coincidencia entre el set y la lista se establece el estado
+        for (TokenDominio td : tokenDominioListaCompleta) {
+
+            EstadoAvisoRenovacion estado = (idsMarcados.contains(td.getDominio().getId())) ?
+            EstadoAvisoRenovacion.CONFIRMADO : // En caso de que esté en ambas listas es porque el cliente lo ha
+            // marcado
+            EstadoAvisoRenovacion.RECHAZADO;// En caso contrario no se ha marcado y por tanto se establece como
+            // RECHAZADO
+            td.setEstadoAvisoRenovacion(estado); // Se establece el nuevo estado en la bd
+        }
+
+        resultadoValidacion.token().setUsado(true);
+
     }
 }
 
