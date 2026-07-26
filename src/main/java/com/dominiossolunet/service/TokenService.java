@@ -22,6 +22,7 @@ import java.util.*;
 public class TokenService {
 
     private final TokenClienteRepository tokenClienteRepository; //final porque va en el constructor y es unico
+    private final TokenDominioRepository tokenDominioRepository;
 
     @Value("${token.dias-expiracion}")
     private int diasExpiracionToken;
@@ -29,6 +30,7 @@ public class TokenService {
     //Constructor
     public TokenService(TokenClienteRepository tokenClienteRepository, TokenDominioRepository tokenDominioRepository) {
         this.tokenClienteRepository = tokenClienteRepository;
+        this.tokenDominioRepository = tokenDominioRepository;
     }
 
     public TokenCliente generarToken(Dominio dominio){
@@ -72,9 +74,8 @@ public class TokenService {
         tokenCliente.setUsado(true);
         // No necesitamos save (dirty checking)
     }
-
     public List<TokenDominio> obtenerListaDeTokensDominioPorTokenCLiente(TokenCliente token) {
-        //todo
+        return tokenDominioRepository.findByTokenCliente(token);
     }
 }
 
