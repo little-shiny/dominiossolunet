@@ -73,13 +73,14 @@ public class RenovacionController {
         }
         ResultadoValidacionRec resultadoValidacionRec = tokenService.validarToken(token);
 
+        model.addAttribute("resultado", resultadoValidacionRec.resultado());
+
         switch(resultadoValidacionRec.resultado()){
             case EXPIRADO, USADO, NO_ENCONTRADO -> {
-                model.addAttribute("resultado", resultadoValidacionRec.resultado());
+                /**/
             }
             case VALIDO -> {
                 tokenService.procesarConfirmacion(resultadoValidacionRec.token(), idsDominiosMarcados);
-                model.addAttribute("resultado",resultadoValidacionRec.resultado());
             }
         }
 

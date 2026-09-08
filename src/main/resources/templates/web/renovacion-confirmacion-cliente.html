@@ -24,6 +24,7 @@
         <form method="post" th:action="@{${@environment.getProperty('app.url.renovacion')}}">
             <input type="hidden" name="token" th:value="${token}"/>
             <button type="submit">Confirmar renovación</button>
+            <button type="button">Rechazar la renovación de todos los dominios</button>
         </form>
     </div>
 
