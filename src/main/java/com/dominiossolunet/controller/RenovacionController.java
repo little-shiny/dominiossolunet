@@ -93,8 +93,6 @@ public class RenovacionController {
                 tokenService.marcarComoUsado(resultadoValidacionRec.token().getToken());
             }
         }
-
-        //TODO mover bloque desde el hashset hasta marcado de usado a tokenservice.
         return "web/renovacion-correcta";
 
     }
