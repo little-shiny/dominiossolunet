@@ -107,4 +107,6 @@ class TokenServiceIntegrationTest {
         assertThat(tokenDominioComprobacion.getEstadoAvisoRenovacion()).isEqualTo(EstadoAvisoRenovacion.CONFIRMADO);
         assertThat(comprobacion.isUsado()).isTrue();
     }
+
+    //TODO completar el test al actualizar POST del controller
 }
