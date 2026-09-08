@@ -97,6 +97,7 @@ class TokenServiceIntegrationTest {
 
         // 6. Se limpia otra vez para forzar una lectura fresca desde la base de datos,
         //    y no desde la caché del contexto de persistencia.
+        entityManager.flush();
         entityManager.clear();
 
         // 7. Verificación
