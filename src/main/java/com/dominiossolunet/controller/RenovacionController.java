@@ -64,7 +64,7 @@ public class RenovacionController {
      * en RequestParam required es false para qye sea null y no lance excepcion
      */
     @PostMapping("/enviar")
-    public String EnviarFormulario(@RequestParam(name = "dominios", required = false) List<Integer> idsDominiosMarcados,
+    public String enviarFormulario(@RequestParam(name = "dominios", required = false) List<Integer> idsDominiosMarcados,
                               String token, Model model){
 
         // Inicialización del requestParam
@@ -72,29 +72,18 @@ public class RenovacionController {
             idsDominiosMarcados = new ArrayList<>();
         }
         ResultadoValidacionRec resultadoValidacionRec = tokenService.validarToken(token);
+
         switch(resultadoValidacionRec.resultado()){
-            case EXPIRADO, USADO, NO_ENCONTRADO -> {}
-            case VALIDO -> {
-
+            case EXPIRADO, USADO, NO_ENCONTRADO -> {
                 model.addAttribute("resultado", resultadoValidacionRec.resultado());
-                HashSet<Integer> setTokens = new HashSet<>(idsDominiosMarcados);
-
-                // obtener la lista de TokenDominio asociada a ese Tokencliente
-                List<TokenDominio> tokenDominioList =
-                        tokenService.obtenerTokenDominioPorTokenCliente(resultadoValidacionRec.token());
-
-                for(TokenDominio td : tokenDominioList){
-                    EstadoAvisoRenovacion estado = (setTokens.contains(td.getDominio().getId())) ?
-                            EstadoAvisoRenovacion.CONFIRMADO :
-                            EstadoAvisoRenovacion.RECHAZADO;
-                    td.setEstadoAvisoRenovacion(estado);
-                }
-
-                tokenService.marcarComoUsado(resultadoValidacionRec.token().getToken());
+            }
+            case VALIDO -> {
+                tokenService.procesarConfirmacion(resultadoValidacionRec.token(), idsDominiosMarcados);
+                model.addAttribute("resultado",resultadoValidacionRec.resultado());
             }
         }
-        return "web/renovacion-correcta";
 
+        return "web/renovacion-correcta";
     }
     //todo Post rechazar
 }
