@@ -95,11 +95,11 @@ public class TokenService {
         // Para cada coincidencia entre el set y la lista se establece el estado
         for (TokenDominio td : tokenDominioListaCompleta) {
 
-            EstadoAvisoRenovacion estado = (idsMarcados.contains(td.getDominio().getId())) ? EstadoAvisoRenovacion.CONFIRMADO : // En caso de que esté en ambas listas es porque el cliente lo ha
-                    // marcado
+            EstadoAvisoRenovacion estado = (idsMarcados.contains(td.getDominio().getId())) ? EstadoAvisoRenovacion.CONFIRMADO :
+                    // En caso de que esté en ambas listas es porque el cliente lo ha marcado para renovar
                     EstadoAvisoRenovacion.RECHAZADO;// En caso contrario no se ha marcado y por tanto se establece como
             // RECHAZADO
-            td.setEstadoAvisoRenovacion(EstadoAvisoRenovacion.RECHAZADO); // Se establece el nuevo estado en la bd
+            td.setEstadoAvisoRenovacion(estado); // Se establece el nuevo estado en la bd
         }
 
         resultadoValidacion.token().setUsado(true);

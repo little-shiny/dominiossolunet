@@ -1,8 +1,6 @@
 package com.dominiossolunet.controller;
 
 import com.dominiossolunet.dto.ResultadoValidacionRec;
-import com.dominiossolunet.model.TokenDominio;
-import com.dominiossolunet.model.enums.EstadoAvisoRenovacion;
 import com.dominiossolunet.service.TokenService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -12,7 +10,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 
 /**
@@ -85,6 +82,6 @@ public class RenovacionController {
         }
 
         return "web/renovacion-correcta";
+
     }
-    //todo Post rechazar
 }
