@@ -10,7 +10,7 @@
 
     <div th:case="'VALIDO'">
         <h2>Renovación de dominio/s próximos a expirar</h2>
-        <p>Buenos días<span th:text="${cliente.nombre}">Nombre</span>, estos son sus dominios próximos a
+        <p>Buenos días <span th:text="${cliente.nombre}">Nombre</span>, estos son sus dominios próximos a
             expirar:</p>
         <ul>
             <li th:each="dominio : ${dominios}">
