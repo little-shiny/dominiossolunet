@@ -99,11 +99,30 @@ public class TokenService {
                     // marcado
                     EstadoAvisoRenovacion.RECHAZADO;// En caso contrario no se ha marcado y por tanto se establece como
             // RECHAZADO
-            td.setEstadoAvisoRenovacion(estado); // Se establece el nuevo estado en la bd
+            td.setEstadoAvisoRenovacion(EstadoAvisoRenovacion.RECHAZADO); // Se establece el nuevo estado en la bd
         }
 
         resultadoValidacion.token().setUsado(true);
 
+    }
+
+    @Transactional
+    public void procesarConfirmacion(TokenCliente token, List<Integer> idsDominiosMarcados) {
+
+        HashSet<Integer> setTokens = new HashSet<>(idsDominiosMarcados);
+
+        // obtener la lista de TokenDominio asociada a ese Tokencliente
+        List<TokenDominio> tokenDominioList =
+                obtenerTokenDominioPorTokenCliente(token);
+
+        for(TokenDominio td : tokenDominioList){
+            EstadoAvisoRenovacion estado = (setTokens.contains(td.getDominio().getId())) ?
+                    EstadoAvisoRenovacion.CONFIRMADO :
+                    EstadoAvisoRenovacion.RECHAZADO;
+            td.setEstadoAvisoRenovacion(estado);
+        }
+
+       marcarComoUsado(token.getToken());
     }
 }
 
