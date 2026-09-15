@@ -11,6 +11,7 @@ import com.dominiossolunet.repository.TokenClienteRepository;
 import com.dominiossolunet.repository.TokenDominioRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -21,7 +22,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TokenServiceTest {
@@ -140,5 +143,102 @@ class TokenServiceTest {
         Field idField = Dominio.class.getDeclaredField("id");
         idField.setAccessible(true);
         idField.set(dominio, id);
+    }
+
+    @Test
+    void generarToken_creaTokenClienteCorrectamente() {
+
+        // Arrange
+        Cliente cliente = new Cliente();
+
+        Dominio dominio1 = new Dominio();
+        dominio1.setCliente(cliente);
+
+        Dominio dominio2 = new Dominio();
+        dominio2.setCliente(cliente);
+
+        TokenCliente tokenGuardado = new TokenCliente();
+
+        when(tokenClienteRepository.save(any(TokenCliente.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        TokenCliente resultado = tokenService.generarToken(
+                cliente,
+                List.of(dominio1, dominio2)
+        );
+
+        // Assert
+        assertNotNull(resultado);
+        assertEquals(cliente, resultado.getCliente());
+        assertFalse(resultado.isUsado());
+        assertNotNull(resultado.getToken());
+        assertNotNull(resultado.getFechaCreacion());
+        assertNotNull(resultado.getFechaExpiracion());
+
+        verify(tokenClienteRepository).save(any(TokenCliente.class));
+    }
+
+    @Test
+    void generarToken_creaUnTokenDominioPorCadaDominio() {
+
+        // Arrange
+        Cliente cliente = new Cliente();
+
+        Dominio dominio1 = new Dominio();
+        dominio1.setCliente(cliente);
+
+        Dominio dominio2 = new Dominio();
+        dominio2.setCliente(cliente);
+
+        when(tokenClienteRepository.save(any(TokenCliente.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        TokenCliente resultado = tokenService.generarToken(
+                cliente,
+                List.of(dominio1, dominio2)
+        );
+
+        // Assert
+        verify(tokenDominioRepository, times(2))
+                .save(any(TokenDominio.class));
+    }
+
+    @Test
+    void generarToken_asociaCadaDominioAlTokenCliente() {
+
+        // Arrange
+        Cliente cliente = new Cliente();
+
+        Dominio dominio1 = new Dominio();
+        dominio1.setCliente(cliente);
+
+        Dominio dominio2 = new Dominio();
+        dominio2.setCliente(cliente);
+
+        when(tokenClienteRepository.save(any(TokenCliente.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        TokenCliente resultado = tokenService.generarToken(
+                cliente,
+                List.of(dominio1, dominio2)
+        );
+
+        // Assert
+        ArgumentCaptor<TokenDominio> captor =
+                ArgumentCaptor.forClass(TokenDominio.class);
+
+        verify(tokenDominioRepository, times(2))
+                .save(captor.capture());
+
+        List<TokenDominio> tokensDominio = captor.getAllValues();
+
+        assertEquals(resultado, tokensDominio.get(0).getTokenCliente());
+        assertEquals(resultado, tokensDominio.get(1).getTokenCliente());
+
+        assertEquals(dominio1, tokensDominio.get(0).getDominio());
+        assertEquals(dominio2, tokensDominio.get(1).getDominio());
     }
 }
