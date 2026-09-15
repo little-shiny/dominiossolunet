@@ -100,7 +100,6 @@ public class TokenService {
      * Metodo que a partir de una lista de integers con las ids de los dominios marcados por el usuario marca cada
      * uno de los TokenDominio como tramite aceptado o rechazado según el cliente haya especificado
      */
-    ```java
     @Transactional
     public void marcaEstadoRenovacionPorListaIdDominio(
             List<Integer> idsDominiosMarcadosCliente,
