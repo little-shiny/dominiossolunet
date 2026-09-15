@@ -1,6 +1,7 @@
 package com.dominiossolunet.service;
 
 import com.dominiossolunet.dto.ResultadoValidacionRec;
+import com.dominiossolunet.model.Cliente;
 import com.dominiossolunet.model.Dominio;
 import com.dominiossolunet.model.TokenCliente;
 import com.dominiossolunet.model.TokenDominio;
@@ -34,15 +35,31 @@ public class TokenService {
         this.tokenDominioRepository = tokenDominioRepository;
     }
 
-    public TokenCliente generarToken(Dominio dominio) {
-        TokenCliente nuevoToken = new TokenCliente();
+    public TokenCliente generarToken(Cliente cliente, List<Dominio> dominios) {
 
-        nuevoToken.setFechaCreacion(LocalDateTime.now());
-        nuevoToken.setFechaExpiracion(LocalDateTime.now().plusDays(diasExpiracionToken));
-        nuevoToken.setToken(UUID.randomUUID().toString());
-        nuevoToken.setUsado(false);
+        LocalDateTime ahora = LocalDateTime.now();
 
-        return tokenClienteRepository.save(nuevoToken);
+        TokenCliente tokenCliente = new TokenCliente();
+
+        tokenCliente.setFechaCreacion(ahora);
+        tokenCliente.setFechaExpiracion(ahora.plusDays(diasExpiracionToken));
+
+        tokenCliente.setToken(UUID.randomUUID().toString());
+        tokenCliente.setUsado(false);
+        tokenCliente.setCliente(cliente);
+
+        tokenCliente = tokenClienteRepository.save(tokenCliente);
+
+        for(Dominio dominio : dominios){
+            TokenDominio tokenDominio = new TokenDominio();
+
+            tokenDominio.setTokenCliente(tokenCliente);
+            tokenDominio.setDominio(dominio);
+            tokenDominio.setEstadoAvisoRenovacion(EstadoAvisoRenovacion.PENDIENTE);
+
+            tokenDominioRepository.save(tokenDominio);
+        }
+        return tokenCliente;
     }
 
     public ResultadoValidacionRec validarToken(String token) {
