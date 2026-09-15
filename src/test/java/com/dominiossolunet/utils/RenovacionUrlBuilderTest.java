@@ -1,35 +1,76 @@
+
 package com.dominiossolunet.utils;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
-@TestPropertySource(
-        properties = "app.url.dominio=facturacion.solunet.es"
-)
 class RenovacionUrlBuilderTest {
 
-    @Autowired
-    private RenovacionUrlBuilder renovacionUrlBuilder;
-
     @Test
-    void construirUrlConfirmacion_debeGenerarUrlCorrecta() {
+    void construirUrlConfirmacion_construyeLaUrlCorrectamente() {
 
         // Arrange
-        String tokenTest = "abcd1234";
+        String urlBase = "https://facturacion.solunet.es";
+        String urlRenovacion = "/renovacion/";
+        String token = "abc123";
+
+        RenovacionUrlBuilder renovacionUrlBuilder =
+                new RenovacionUrlBuilder(urlBase, urlRenovacion);
 
         String urlEsperada =
-                "facturacion.solunet.es/renovacion/?t=abcd1234";
+                "https://facturacion.solunet.es/renovacion/abc123";
 
         // Act
-        String urlObtenida =
-                renovacionUrlBuilder.construirUrlConfirmacion(tokenTest);
+        String resultado =
+                renovacionUrlBuilder.construirUrlConfirmacion(token);
 
         // Assert
-        assertThat(urlObtenida).isEqualTo(urlEsperada);
+        assertThat(resultado)
+                .isEqualTo(urlEsperada);
+    }
+
+
+    @Test
+    void construirUrlConfirmacion_conTokenDiferente_utilizaElTokenRecibido() {
+
+        // Arrange
+        RenovacionUrlBuilder renovacionUrlBuilder =
+                new RenovacionUrlBuilder(
+                        "https://facturacion.solunet.es",
+                        "/renovacion/"
+                );
+
+        // Act
+        String resultado =
+                renovacionUrlBuilder.construirUrlConfirmacion("xyz789");
+
+        // Assert
+        assertThat(resultado)
+                .isEqualTo(
+                        "https://facturacion.solunet.es/renovacion/xyz789"
+                );
+    }
+
+
+    @Test
+    void construirUrlConfirmacion_conTokenVacio_devuelveLaUrlSinToken() {
+
+        // Arrange
+        RenovacionUrlBuilder renovacionUrlBuilder =
+                new RenovacionUrlBuilder(
+                        "https://facturacion.solunet.es",
+                        "/renovacion/"
+                );
+
+        // Act
+        String resultado =
+                renovacionUrlBuilder.construirUrlConfirmacion("");
+
+        // Assert
+        assertThat(resultado)
+                .isEqualTo(
+                        "https://facturacion.solunet.es/renovacion/"
+                );
     }
 }
