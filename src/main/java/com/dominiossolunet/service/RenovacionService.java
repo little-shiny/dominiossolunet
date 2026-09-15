@@ -72,7 +72,7 @@ public class RenovacionService {
 
         List<Estado> estadosValidos = List.of(Estado.ACTIVO, Estado.AVISO_ENVIADO);
 
-        List<Dominio> candidatos = dominioRepository.findByEstadoInAndFechaExpiracionBefore(estadosValidos, hoy.plusDays(umbralMaximo));
+        List<Dominio> candidatos = dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(estadosValidos, hoy.plusDays(umbralMaximo));
 
         Map<Cliente, List<Dominio>> dominiosPorCliente = candidatos.stream()
                 // No se procesan dominios que ya han expirado
