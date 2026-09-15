@@ -6,10 +6,17 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+
 import java.time.LocalDateTime;
 
-@Entity @Getter@Setter
-public class TokenRenovacion {
+/**
+ * Clase modelo que representa "Una tanda" de dominios para avisar al cliente, es decir, se emplea un token por
+ * cliente para todos sus dominios y no un token por cada dominio
+ */
+@Entity
+@Getter
+@Setter
+public class TokenCliente {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,9 +32,9 @@ public class TokenRenovacion {
     private LocalDateTime fechaExpiracion;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_dominio",nullable = false)
+    @JoinColumn(name = "id_cliente", nullable = false)
     @NotNull
-    private Dominio dominio;
+    private Cliente cliente;
 
     @NotNull
     @Column(nullable = false)
@@ -37,5 +44,6 @@ public class TokenRenovacion {
     @Column(nullable = false)
     private boolean usado;
 
-    public TokenRenovacion(){}
+    public TokenCliente() {
+    }
 }

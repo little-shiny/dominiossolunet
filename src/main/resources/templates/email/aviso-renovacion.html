@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="es">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="text/html; charset=UTF-8" http-equiv="Content-Type">
     <title>Simple Transactional Email</title>
     <style media="all">
         /* -------------------------------------
@@ -298,7 +298,7 @@
     </style>
 </head>
 <body>
-<table role="presentation" class="body">
+<table class="body" role="presentation">
     <tr>
         <td>&nbsp;</td>
         <td class="container">
@@ -306,7 +306,7 @@
 
                 <!-- START CENTERED WHITE CONTAINER -->
                 <span class="preheader">Dominios cerca de expirar</span>
-                <table role="presentation" class="main">
+                <table class="main" role="presentation">
 
                     <!-- START MAIN CONTENT AREA -->
                     <tr>
@@ -317,19 +317,20 @@
                             </p>
                             <!-- lista de dominios pendientes de renovacion -->
                             <ul th:each="dominio : ${listaDominios}">
-                                <li th:text="|${dominio.nombreDominio} expirará el ${#temporals.format(dominio.fechaExpiracion, 'dd/MM/yyyy')}|"></li>                            </ul>
+                                <li th:text="|${dominio.nombreDominio} expirará el ${#temporals.format(dominio.fechaExpiracion, 'dd/MM/yyyy')}|"></li>
+                            </ul>
                             <p>Para que podamos procesar la renovación, puede acceder desde el
                                 siguiente enlace para realizar la petición: </p>
 
-                         <table role="presentation" class="btn btn-primary">
+                            <table class="btn btn-primary" role="presentation">
                                 <tbody>
                                 <tr>
                                     <td>
                                         <table role="presentation">
                                             <tbody>
                                             <tr>
-                                                <td> <a th:href="${urlRenovacion}" target="_blank">Solicitar
-                                                    renovación de dominios</a> </td>
+                                                <td><a target="_blank" th:href="${urlRenovacion}">Solicitar
+                                                    renovación de dominios</a></td>
                                             </tr>
                                             </tbody>
                                         </table>
@@ -356,7 +357,7 @@
                         </tr>
                         <tr>
                             <td>
-                                <img src="cid:logosolunet" alt="Solunet"/>
+                                <img alt="Solunet" src="cid:logosolunet"/>
                             </td>
                         </tr>
                     </table>

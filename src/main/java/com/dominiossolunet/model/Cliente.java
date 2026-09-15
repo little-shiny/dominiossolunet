@@ -2,22 +2,25 @@ package com.dominiossolunet.model;
 
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-import jakarta.validation.constraints.NotNull;
+
+import java.util.List;
 
 /**
  * Model Class that represents a Client data type
  */
 
 @Entity
-@Getter @Setter
+@Getter
+@Setter
 public class Cliente {
 
-    @Id @Setter(AccessLevel.NONE)
+    @Id
+    @Setter(AccessLevel.NONE)
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @NotNull
     private int id;
 
     @NotNull
@@ -26,7 +29,11 @@ public class Cliente {
     @NotNull
     private String email;
 
-    public Cliente(){}
+    @OneToMany(mappedBy = "cliente")
+    private List<Dominio> dominios;
+
+    public Cliente() {
+    }
 
     @Override
     public String toString() {

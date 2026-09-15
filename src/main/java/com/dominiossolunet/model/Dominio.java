@@ -28,7 +28,6 @@ public class Dominio {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_cliente", nullable = false)
-    @NotNull
     private Cliente cliente;
 
     @NotNull
@@ -43,6 +42,7 @@ public class Dominio {
     // evita reenviar un umbral mas de dos veces SOLO DEBUG
     private Integer ultimoUmbralAvisado;
 
-    public Dominio(){}
+    public Dominio() {
+    }
 
 }
