@@ -136,7 +136,7 @@ public class RenovacionService {
 
         long diasRestantes = ChronoUnit.DAYS.between(hoy, dominio.getFechaExpiracion());
 
-        return umbrales.stream().filter(umbral -> umbral > diasRestantes).min(Integer::compareTo).orElse(null);
+        return umbrales.stream().filter(umbral -> umbral >= diasRestantes).min(Integer::compareTo).orElse(null);
     }
 
     /**
