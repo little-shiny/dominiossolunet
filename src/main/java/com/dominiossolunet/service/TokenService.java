@@ -100,28 +100,44 @@ public class TokenService {
      * Metodo que a partir de una lista de integers con las ids de los dominios marcados por el usuario marca cada
      * uno de los TokenDominio como tramite aceptado o rechazado según el cliente haya especificado
      */
+    ```java
     @Transactional
-    public void marcaEstadoRenovacionPorListaIdDominio(List<Integer> idsDominiosMarcadosCliente, ResultadoValidacionRec resultadoValidacion) {
+    public void marcaEstadoRenovacionPorListaIdDominio(
+            List<Integer> idsDominiosMarcadosCliente,
+            ResultadoValidacionRec resultadoValidacion) {
 
-        // Se usa un Set que se crea a partir de la lista que obtenemos al enviar el formulario
-        HashSet<Integer> idsMarcados = new HashSet<>(idsDominiosMarcadosCliente);
+        TokenCliente tokenCliente =
+                tokenClienteRepository.findByToken(
+                        resultadoValidacion.token().getToken()
+                ).orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "Token no encontrado: "
+                                        + resultadoValidacion.token().getToken()
+                        )
+                );
 
-        // obtener la lista de TODOS los TokenDominio asociada a ese TokenCliente (No solo los marcados)
-        List<TokenDominio> tokenDominioListaCompleta = tokenDominioRepository.findByTokenCliente(resultadoValidacion.token());
+        HashSet<Integer> idsMarcados =
+                new HashSet<>(idsDominiosMarcadosCliente);
 
-        // Para cada coincidencia entre el set y la lista se establece el estado
+        List<TokenDominio> tokenDominioListaCompleta =
+                tokenDominioRepository.findByTokenCliente(tokenCliente);
+
         for (TokenDominio td : tokenDominioListaCompleta) {
 
-            EstadoAvisoRenovacion estado = (idsMarcados.contains(td.getDominio().getId())) ? EstadoAvisoRenovacion.CONFIRMADO :
-                    // En caso de que esté en ambas listas es porque el cliente lo ha marcado para renovar
-                    EstadoAvisoRenovacion.RECHAZADO;// En caso contrario no se ha marcado y por tanto se establece como
-            // RECHAZADO
-            td.setEstadoAvisoRenovacion(estado); // Se establece el nuevo estado en la bd
+            if (idsMarcados.contains(td.getDominio().getId())) {
+                td.setEstadoAvisoRenovacion(
+                        EstadoAvisoRenovacion.CONFIRMADO
+                );
+            } else {
+                td.setEstadoAvisoRenovacion(
+                        EstadoAvisoRenovacion.RECHAZADO
+                );
+            }
         }
 
-        resultadoValidacion.token().setUsado(true);
-
+        tokenCliente.setUsado(true);
     }
+
 
     @Transactional
     public void procesarConfirmacion(TokenCliente token, List<Integer> idsDominiosMarcados) {
