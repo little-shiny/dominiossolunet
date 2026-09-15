@@ -17,20 +17,17 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Test de integración para TokenService centrado en el comportamiento de persistencia
- * (managed vs detached) al modificar entidades a través de varias "transacciones lógicas",
- * simulando lo que ocurriría entre una petición GET (validarToken) y una petición POST
- * (marcaEstadoRenovacionPorListaIdDominio) reales.
+ * Tests de integración de TokenService.
  *
- * Se usa @DataJpaTest porque nos da una base H2 real y TestEntityManager, pero como
- * TokenService es un @Service (no un Repository ni una @Entity), @DataJpaTest no lo
- * registra por defecto — hay que importarlo explícitamente con @Import.
+ * Comprueba que los cambios realizados sobre TokenCliente y TokenDominio
+ * se persisten correctamente en una base de datos H2 real.
  */
 @DataJpaTest
 @Import(TokenService.class)
@@ -51,7 +48,10 @@ class TokenServiceIntegrationTest {
     @Test
     void marcaEstadoRenovacion_debePersistirCambiosAunqueElTokenVengaDeUnaConsultaAnterior() {
 
-        // 1. Preparar datos: Cliente -> Dominio -> TokenCliente -> TokenDominio
+        // =====================================================
+        // ARRANGE
+        // =====================================================
+
         Cliente cliente = new Cliente();
         cliente.setNombre("Ana");
         cliente.setEmail("ana@ana.com");
@@ -60,53 +60,218 @@ class TokenServiceIntegrationTest {
         Dominio dominio = new Dominio();
         dominio.setNombreDominio("ana.com");
         dominio.setEstado(Estado.AVISO_ENVIADO);
+        dominio.setFechaExpiracion(LocalDate.now().plusDays(20));
         dominio.setCliente(cliente);
         dominio.setRegistrador(Registrador.DOMITECA);
         entityManager.persistAndFlush(dominio);
+
+        int idDominio = dominio.getId();
 
         TokenCliente tokenCliente = new TokenCliente();
         tokenCliente.setToken("abc123");
         tokenCliente.setUsado(false);
         tokenCliente.setFechaCreacion(LocalDateTime.now());
-        tokenCliente.setFechaExpiracion(LocalDateTime.now().plusDays(1));
+        tokenCliente.setFechaExpiracion(
+                LocalDateTime.now().plusDays(1)
+        );
         tokenCliente.setCliente(cliente);
         entityManager.persistAndFlush(tokenCliente);
 
         TokenDominio tokenDominio = new TokenDominio();
         tokenDominio.setTokenCliente(tokenCliente);
         tokenDominio.setDominio(dominio);
-        tokenDominio.setEstadoAvisoRenovacion(EstadoAvisoRenovacion.PENDIENTE);
+        tokenDominio.setEstadoAvisoRenovacion(
+                EstadoAvisoRenovacion.PENDIENTE
+        );
         entityManager.persistAndFlush(tokenDominio);
 
-        // 2. Simular la petición GET: se recupera el token tal como haría validarToken()
-        TokenCliente tokenRecuperado = tokenClienteRepository.findByToken("abc123").orElseThrow();
+        // =====================================================
+        // SIMULAR GET
+        // =====================================================
 
-        // 3. Punto clave: se vacía el contexto de persistencia.
-        //    Esto simula que, entre el GET y el POST, no hay ningún EntityManager compartido
-        //    (como pasaría de verdad entre dos peticiones HTTP distintas).
-        //    A partir de aquí, tokenRecuperado queda DETACHED.
+        TokenCliente tokenRecuperado =
+                tokenClienteRepository
+                        .findByToken("abc123")
+                        .orElseThrow();
+
+        // =====================================================
+        // SIMULAR CAMBIO DE PETICIÓN HTTP
+        // =====================================================
+
         entityManager.clear();
 
-        // 4. Se construye el record tal como llegaría desde el controller en el POST
+        // =====================================================
+        // POST
+        // =====================================================
+
         ResultadoValidacionRec resultadoValidacion =
-                new ResultadoValidacionRec(ResultadoValidacion.VALIDO, tokenRecuperado);
+                new ResultadoValidacionRec(
+                        ResultadoValidacion.VALIDO,
+                        tokenRecuperado
+                );
 
-        // 5. Se llama al método bajo prueba con el objeto detached
         tokenService.marcaEstadoRenovacionPorListaIdDominio(
-                List.of(dominio.getId()), resultadoValidacion);
+                List.of(idDominio),
+                resultadoValidacion
+        );
 
-        // 6. Se limpia otra vez para forzar una lectura fresca desde la base de datos,
-        //    y no desde la caché del contexto de persistencia.
+        // =====================================================
+        // FORZAR ESCRITURA Y NUEVA LECTURA
+        // =====================================================
+
         entityManager.flush();
         entityManager.clear();
 
-        // 7. Verificación
-        TokenCliente comprobacion = tokenClienteRepository.findByToken("abc123").orElseThrow();
-        TokenDominio tokenDominioComprobacion = tokenDominioRepository.findByTokenCliente(comprobacion).getFirst();
+        // =====================================================
+        // ASSERT
+        // =====================================================
 
-        assertThat(tokenDominioComprobacion.getEstadoAvisoRenovacion()).isEqualTo(EstadoAvisoRenovacion.CONFIRMADO);
-        assertThat(comprobacion.isUsado()).isTrue();
+        TokenCliente comprobacion =
+                tokenClienteRepository
+                        .findByToken("abc123")
+                        .orElseThrow();
+
+        TokenDominio tokenDominioComprobacion =
+                tokenDominioRepository
+                        .findByTokenCliente(comprobacion)
+                        .getFirst();
+
+        assertThat(tokenDominioComprobacion
+                .getEstadoAvisoRenovacion())
+                .isEqualTo(EstadoAvisoRenovacion.CONFIRMADO);
+
+        assertThat(comprobacion.isUsado())
+                .isTrue();
     }
 
-    //TODO completar el test al actualizar POST del controller
+    @Test
+    void marcaEstadoRenovacion_siNoMarcaNingunDominio_debeRechazarTodos() {
+
+        // =====================================================
+        // ARRANGE
+        // =====================================================
+
+        Cliente cliente = new Cliente();
+        cliente.setNombre("Laura");
+        cliente.setEmail("laura@laura.com");
+        entityManager.persistAndFlush(cliente);
+
+        Dominio dominio1 = crearDominio(
+                cliente,
+                "laura1.com"
+        );
+
+        Dominio dominio2 = crearDominio(
+                cliente,
+                "laura2.com"
+        );
+
+        entityManager.persistAndFlush(dominio1);
+        entityManager.persistAndFlush(dominio2);
+
+        TokenCliente tokenCliente = new TokenCliente();
+        tokenCliente.setToken("token-rechazo");
+        tokenCliente.setUsado(false);
+        tokenCliente.setFechaCreacion(LocalDateTime.now());
+        tokenCliente.setFechaExpiracion(
+                LocalDateTime.now().plusDays(1)
+        );
+        tokenCliente.setCliente(cliente);
+        entityManager.persistAndFlush(tokenCliente);
+
+        TokenDominio tokenDominio1 = crearTokenDominio(
+                tokenCliente,
+                dominio1
+        );
+
+        TokenDominio tokenDominio2 = crearTokenDominio(
+                tokenCliente,
+                dominio2
+        );
+
+        entityManager.persistAndFlush(tokenDominio1);
+        entityManager.persistAndFlush(tokenDominio2);
+
+        TokenCliente tokenRecuperado =
+                tokenClienteRepository
+                        .findByToken("token-rechazo")
+                        .orElseThrow();
+
+        entityManager.clear();
+
+        ResultadoValidacionRec resultado =
+                new ResultadoValidacionRec(
+                        ResultadoValidacion.VALIDO,
+                        tokenRecuperado
+                );
+
+        // =====================================================
+        // ACT
+        // =====================================================
+
+        tokenService.marcaEstadoRenovacionPorListaIdDominio(
+                List.of(),
+                resultado
+        );
+
+        entityManager.flush();
+        entityManager.clear();
+
+        // =====================================================
+        // ASSERT
+        // =====================================================
+
+        TokenCliente comprobacion =
+                tokenClienteRepository
+                        .findByToken("token-rechazo")
+                        .orElseThrow();
+
+        List < TokenDominio > dominios =
+                tokenDominioRepository
+                        .findByTokenCliente(comprobacion);
+
+        assertThat(dominios)
+                .hasSize(2);
+
+        assertThat(dominios)
+                .allMatch(td ->
+                        td.getEstadoAvisoRenovacion() ==
+                        EstadoAvisoRenovacion.RECHAZADO
+                );
+
+        assertThat(comprobacion.isUsado())
+                .isTrue();
+    }
+
+    private Dominio crearDominio(
+            Cliente cliente,
+            String nombre) {
+
+        Dominio dominio = new Dominio();
+
+        dominio.setCliente(cliente);
+        dominio.setNombreDominio(nombre);
+        dominio.setEstado(Estado.AVISO_ENVIADO);
+        dominio.setFechaExpiracion(
+                LocalDate.now().plusDays(20)
+        );
+        dominio.setRegistrador(Registrador.DOMITECA);
+
+        return dominio;
+    }
+
+    private TokenDominio crearTokenDominio(
+            TokenCliente tokenCliente,
+            Dominio dominio) {
+
+        TokenDominio tokenDominio = new TokenDominio();
+
+        tokenDominio.setTokenCliente(tokenCliente);
+        tokenDominio.setDominio(dominio);
+        tokenDominio.setEstadoAvisoRenovacion(
+                EstadoAvisoRenovacion.PENDIENTE
+        );
+
+        return tokenDominio;
+    }
 }
