@@ -2,10 +2,10 @@ package com.dominiossolunet.model;
 
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
-import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
 
@@ -14,10 +14,12 @@ import java.util.List;
  */
 
 @Entity
-@Getter @Setter
+@Getter
+@Setter
 public class Cliente {
 
-    @Id @Setter(AccessLevel.NONE)
+    @Id
+    @Setter(AccessLevel.NONE)
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
 
@@ -30,7 +32,8 @@ public class Cliente {
     @OneToMany(mappedBy = "cliente")
     private List<Dominio> dominios;
 
-    public Cliente(){}
+    public Cliente() {
+    }
 
     @Override
     public String toString() {

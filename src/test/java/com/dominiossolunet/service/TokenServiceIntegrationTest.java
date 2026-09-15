@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests de integración de TokenService.
- *
+ * <p>
  * Comprueba que los cambios realizados sobre TokenCliente y TokenDominio
  * se persisten correctamente en una base de datos H2 real.
  */
@@ -226,7 +226,7 @@ class TokenServiceIntegrationTest {
                         .findByToken("token-rechazo")
                         .orElseThrow();
 
-        List < TokenDominio > dominios =
+        List<TokenDominio> dominios =
                 tokenDominioRepository
                         .findByTokenCliente(comprobacion);
 
@@ -236,7 +236,7 @@ class TokenServiceIntegrationTest {
         assertThat(dominios)
                 .allMatch(td ->
                         td.getEstadoAvisoRenovacion() ==
-                        EstadoAvisoRenovacion.RECHAZADO
+                                EstadoAvisoRenovacion.RECHAZADO
                 );
 
         assertThat(comprobacion.isUsado())

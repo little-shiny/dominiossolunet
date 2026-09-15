@@ -10,10 +10,12 @@ import lombok.Setter;
 import java.time.LocalDate;
 
 @Entity
-@Getter@Setter
+@Getter
+@Setter
 public class Facturacion {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Setter(AccessLevel.NONE)
     @NotNull
     private int id;
@@ -25,10 +27,11 @@ public class Facturacion {
     private LocalDate fechaUltimaFactura;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name= "id_dominio")
+    @JoinColumn(name = "id_dominio")
     @NotNull
     private Dominio dominio;
     private String nota;
 
-    public Facturacion(){}
+    public Facturacion() {
+    }
 }

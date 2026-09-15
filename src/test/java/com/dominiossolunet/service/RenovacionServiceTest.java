@@ -18,16 +18,14 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
  * Tests unitarios de RenovacionService.
- *
+ * <p>
  * Se comprueba:
- *
+ * <p>
  * - Búsqueda de dominios candidatos.
  * - Ignorar dominios expirados.
  * - Determinación de umbrales.
@@ -36,21 +34,18 @@ import static org.mockito.Mockito.*;
  * - Agrupación por cliente.
  * - Generación de un único token por cliente.
  * - Envío de todos los dominios correspondientes al cliente
- *   al TokenService.
+ * al TokenService.
  */
 @ExtendWith(MockitoExtension.class)
 class RenovacionServiceTest {
 
+    private final List<Integer> UMBRALES = List.of(30, 15, 5, 1);
     @Mock
     private DominioRepository dominioRepository;
-
     @Mock
     private TokenService tokenService;
-
     @InjectMocks
     private RenovacionService renovacionService;
-
-    private final List<Integer> UMBRALES = List.of(30, 15, 5, 1);
 
     @BeforeEach
     void setUp() {

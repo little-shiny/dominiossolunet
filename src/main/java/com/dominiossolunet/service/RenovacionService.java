@@ -6,12 +6,11 @@ import com.dominiossolunet.model.TokenCliente;
 import com.dominiossolunet.model.enums.Estado;
 import com.dominiossolunet.repository.DominioRepository;
 import jakarta.annotation.PostConstruct;
-import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;

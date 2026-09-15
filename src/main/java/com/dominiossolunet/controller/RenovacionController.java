@@ -28,6 +28,7 @@ public class RenovacionController {
 
     /**
      * GET informacion y validar token para mostrar página de renovacion al cliente
+     *
      * @param token
      * @param model
      * @return
@@ -62,17 +63,17 @@ public class RenovacionController {
      */
     @PostMapping("/enviar")
     public String enviarFormulario(@RequestParam(name = "dominios", required = false) List<Integer> idsDominiosMarcados,
-                              String token, Model model){
+                                   String token, Model model) {
 
         // Inicialización del requestParam
-        if(idsDominiosMarcados == null){
+        if (idsDominiosMarcados == null) {
             idsDominiosMarcados = new ArrayList<>();
         }
         ResultadoValidacionRec resultadoValidacionRec = tokenService.validarToken(token);
 
         model.addAttribute("resultado", resultadoValidacionRec.resultado());
 
-        switch(resultadoValidacionRec.resultado()){
+        switch (resultadoValidacionRec.resultado()) {
             case EXPIRADO, USADO, NO_ENCONTRADO -> {
                 /**/
             }

@@ -13,7 +13,9 @@ import java.time.LocalDateTime;
  * Es una tabla intermedia con el estado de los dominios de cada aviso
  */
 
-@Entity @Getter@Setter
+@Entity
+@Getter
+@Setter
 public class TokenDominio {
 
     @Id

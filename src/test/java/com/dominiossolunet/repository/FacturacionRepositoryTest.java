@@ -1,6 +1,8 @@
 package com.dominiossolunet.repository;
 
-import com.dominiossolunet.model.*;
+import com.dominiossolunet.model.Cliente;
+import com.dominiossolunet.model.Dominio;
+import com.dominiossolunet.model.Facturacion;
 import com.dominiossolunet.model.enums.Estado;
 import com.dominiossolunet.model.enums.EstadoFacturacion;
 import com.dominiossolunet.model.enums.Registrador;
@@ -19,17 +21,16 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 public class FacturacionRepositoryTest {
 
     @Autowired
+    ClienteRepository clienteRepository;
+    @Autowired
+    DominioRepository dominioRepository;
+    @Autowired
     private TestEntityManager entityManager;
-
     @Autowired
     private FacturacionRepository facturacionRepository;
 
-    @Autowired ClienteRepository clienteRepository;
-
-    @Autowired DominioRepository dominioRepository;
-
     @Test
-    void guardarYRecuperarFacturacionPorDominio(){
+    void guardarYRecuperarFacturacionPorDominio() {
 
         // Creación del cliente asociado al dominio
         Cliente cliente1 = new Cliente();
@@ -70,7 +71,7 @@ public class FacturacionRepositoryTest {
     }
 
     @Test
-    void guardarYrecuperarFacturacionPorEstado(){
+    void guardarYrecuperarFacturacionPorEstado() {
         // Creación del cliente asociado al dominio
         Cliente cliente1 = new Cliente();
         cliente1.setNombre("Ana");

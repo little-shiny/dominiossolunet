@@ -42,6 +42,7 @@ public class Dominio {
     // evita reenviar un umbral mas de dos veces SOLO DEBUG
     private Integer ultimoUmbralAvisado;
 
-    public Dominio(){}
+    public Dominio() {
+    }
 
 }

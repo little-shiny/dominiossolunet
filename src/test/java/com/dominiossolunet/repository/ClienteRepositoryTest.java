@@ -19,7 +19,7 @@ public class ClienteRepositoryTest {
     private ClienteRepository clienteRepository;
 
     @Test
-    void guardarYRecuperarCliente(){
+    void guardarYRecuperarCliente() {
         // Preparacion de los datos de la bd
         Cliente cliente = new Cliente();
         cliente.setNombre("Ana");
@@ -42,7 +42,7 @@ public class ClienteRepositoryTest {
     }
 
     @Test
-    void guardarYBuscarClientePorEmailExiste(){
+    void guardarYBuscarClientePorEmailExiste() {
         //Inserción de datos de prueba
         Cliente cliente1 = new Cliente();
         cliente1.setNombre("Pepe");
@@ -69,7 +69,7 @@ public class ClienteRepositoryTest {
     }
 
     @Test
-    void guardarYBuscarClientePorEmailENoExiste(){
+    void guardarYBuscarClientePorEmailENoExiste() {
         //Inserción de datos de prueba
         Cliente cliente1 = new Cliente();
         cliente1.setNombre("Pepe");
@@ -83,5 +83,4 @@ public class ClienteRepositoryTest {
     }
 
 
-
-    }
+}

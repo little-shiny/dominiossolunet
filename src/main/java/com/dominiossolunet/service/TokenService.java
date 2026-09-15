@@ -14,7 +14,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Métodos a implementar: generar un nuevo token, validarlo(que existe, que no ha caducado, que no está usado
@@ -50,7 +53,7 @@ public class TokenService {
 
         tokenCliente = tokenClienteRepository.save(tokenCliente);
 
-        for(Dominio dominio : dominios){
+        for (Dominio dominio : dominios) {
             TokenDominio tokenDominio = new TokenDominio();
 
             tokenDominio.setTokenCliente(tokenCliente);
@@ -147,14 +150,14 @@ public class TokenService {
         List<TokenDominio> tokenDominioList =
                 obtenerTokenDominioPorTokenCliente(token);
 
-        for(TokenDominio td : tokenDominioList){
+        for (TokenDominio td : tokenDominioList) {
             EstadoAvisoRenovacion estado = (setTokens.contains(td.getDominio().getId())) ?
                     EstadoAvisoRenovacion.CONFIRMADO :
                     EstadoAvisoRenovacion.RECHAZADO;
             td.setEstadoAvisoRenovacion(estado);
         }
 
-       marcarComoUsado(token.getToken());
+        marcarComoUsado(token.getToken());
     }
 }
 

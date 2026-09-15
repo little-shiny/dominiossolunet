@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Confirmación de renovación de dominios</title>
@@ -16,24 +16,24 @@
         </p>
 
         <form method="post"
-              th:action="@{${@environment.getProperty('app.url.renovacion')}}"
-              onsubmit="return confirmarEnvio()">
+              onsubmit="return confirmarEnvio()"
+              th:action="@{${@environment.getProperty('app.url.renovacion')}}">
 
             <ul>
                 <li th:each="dominio : ${dominios}">
                     <label>
                         <span th:text="${dominio.nombreDominio}"></span>
 
-                        <input type="checkbox"
-                               name="dominios"
-                               th:value="${dominio.id}">
+                        <input name="dominios"
+                               th:value="${dominio.id}"
+                               type="checkbox">
                     </label>
                 </li>
             </ul>
 
-            <input type="hidden"
-                   name="token"
-                   th:value="${token}"/>
+            <input name="token"
+                   th:value="${token}"
+                   type="hidden"/>
 
             <button type="submit">
                 Confirmar y enviar

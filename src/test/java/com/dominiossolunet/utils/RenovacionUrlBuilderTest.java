@@ -1,4 +1,3 @@
-
 package com.dominiossolunet.utils;
 
 import org.junit.jupiter.api.Test;
