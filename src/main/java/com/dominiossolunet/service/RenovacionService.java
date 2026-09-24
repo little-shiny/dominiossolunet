@@ -1,5 +1,7 @@
 package com.dominiossolunet.service;
 
+import com.dominiossolunet.dto.ErrorEnvioEmail;
+import com.dominiossolunet.dto.ResultadoEnvioEmail;
 import com.dominiossolunet.model.Cliente;
 import com.dominiossolunet.model.Dominio;
 import com.dominiossolunet.model.TokenCliente;
@@ -16,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -80,6 +83,8 @@ public class RenovacionService {
     public void procesarAvisos() {
         logger.info("Inicio del proceso de avisos");
 
+        List<ErrorEnvioEmail> erroresEnvio = new ArrayList<>();
+
         LocalDate hoy = LocalDate.now();
 
         List<Estado> estadosValidos = List.of(Estado.ACTIVO, Estado.AVISO_ENVIADO);
@@ -115,10 +120,12 @@ public class RenovacionService {
             // Creación de la url de la renovación
             String urlRenovacion = renovacionUrlBuilder.construirUrlConfirmacion(token.getToken());
 
-            boolean enviado = emailService.enviarAvisoRenovacion(cliente, dominios, urlRenovacion);
+            ResultadoEnvioEmail resultado = emailService.enviarAvisoRenovacion(cliente, dominios, urlRenovacion);
 
-            if(enviado){
+            if(resultado.isEnviado()){
                 marcarComoAvisado(dominios, hoy);
+            }else{
+                erroresEnvio.add(new ErrorEnvioEmail(cliente, dominios, resultado.getMensajeError()));
             }
         }
     }

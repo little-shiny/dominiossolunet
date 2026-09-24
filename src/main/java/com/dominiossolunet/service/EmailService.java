@@ -1,5 +1,6 @@
 package com.dominiossolunet.service;
 
+import com.dominiossolunet.dto.ResultadoEnvioEmail;
 import com.dominiossolunet.model.Cliente;
 import com.dominiossolunet.model.Dominio;
 import jakarta.mail.MessagingException;
@@ -11,6 +12,8 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -18,6 +21,8 @@ import java.util.List;
 public class EmailService {
     private final JavaMailSender mailSender;
     private final TemplateEngine templateEngine;
+
+    private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
     @Value("${spring.mail.username}")
     private String remitente;
@@ -27,7 +32,7 @@ public class EmailService {
         this.templateEngine = templateEngine;
     }
 
-    public boolean enviarAvisoRenovacion(Cliente cliente, List<Dominio> dominiosRenovar, String urlRenovacion) {
+    public ResultadoEnvioEmail enviarAvisoRenovacion(Cliente cliente, List<Dominio> dominiosRenovar, String urlRenovacion) {
 
         try {
             MimeMessage mensaje = mailSender.createMimeMessage();
@@ -46,18 +51,15 @@ public class EmailService {
             helper.setText(html, true);
             helper.addInline("logosolunet", new ClassPathResource("static/images/logosolunet.png"));
             mailSender.send(mensaje);
+            logger.info("Email de renovación enviado correctamente a {}", cliente.getEmail());
 
-            return true;
+            return new ResultadoEnvioEmail(true,null);
 
         } catch (MessagingException e) {
-            // todo logger
-            return false;
+            logger.error("Error enviando el aviso al cliente {}", cliente.getEmail(),e);
+            return new ResultadoEnvioEmail(false, e.getMessage());;
         }
     }
 
 
-    // Todo completar aviso
-//    public boolean enviarNotificacionAdmin(Cliente cliente, List<Dominio> dominios){
-//
-//    }
 }
