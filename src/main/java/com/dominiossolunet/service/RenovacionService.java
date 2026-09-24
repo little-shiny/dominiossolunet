@@ -6,6 +6,7 @@ import com.dominiossolunet.model.TokenCliente;
 import com.dominiossolunet.model.enums.Estado;
 import com.dominiossolunet.model.enums.EstadoAvisoRenovacion;
 import com.dominiossolunet.repository.DominioRepository;
+import com.dominiossolunet.utils.RenovacionUrlBuilder;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,8 @@ public class RenovacionService {
     private final TokenService tokenService;  //idem
     private final EmailService emailService;
 
+    private final RenovacionUrlBuilder renovacionUrlBuilder;
+
     @Value("${renovacion.umbrales}")
     private List<Integer> umbrales;
 
@@ -38,10 +41,12 @@ public class RenovacionService {
     private static final Logger logger = LoggerFactory.getLogger(RenovacionService.class);
 
     //Constructor
-    public RenovacionService(DominioRepository dominioRepository, TokenService tokenService, EmailService emailService) {
+    public RenovacionService(DominioRepository dominioRepository, TokenService tokenService,
+                             EmailService emailService, RenovacionUrlBuilder renovacionUrlBuilder) {
         this.dominioRepository = dominioRepository;
         this.tokenService = tokenService;
         this.emailService = emailService;
+        this.renovacionUrlBuilder = renovacionUrlBuilder;
     }
 
     /**
@@ -107,9 +112,14 @@ public class RenovacionService {
 
             logger.info("Token generado para el cliente {}", cliente.getNombre());
 
+            // Creación de la url de la renovación
+            String urlRenovacion = renovacionUrlBuilder.construirUrlConfirmacion(token.getToken());
 
+            boolean enviado = emailService.enviarAvisoRenovacion(cliente, dominios, urlRenovacion);
 
-            //todo emailService.enviarAviso(cliente, dominios, token);
+            if(enviado){
+                marcarComoAvisado(dominios, hoy);
+            }
         }
     }
 
