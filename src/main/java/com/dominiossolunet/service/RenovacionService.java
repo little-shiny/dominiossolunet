@@ -128,6 +128,15 @@ public class RenovacionService {
                 erroresEnvio.add(new ErrorEnvioEmail(cliente, dominios, resultado.getMensajeError()));
             }
         }
+
+        ResultadoEnvioEmail resultadoInforme = emailService.enviarInformeRenovacion(erroresEnvio);
+
+        if(resultadoInforme.isEnviado()){
+            logger.info("Informe de renovación enviado correctamente al administrador");
+        }else{
+            logger.error("No se pudo enviar el informe al administrador");
+            resultadoInforme.getMensajeError();
+        }
     }
 
     /**
