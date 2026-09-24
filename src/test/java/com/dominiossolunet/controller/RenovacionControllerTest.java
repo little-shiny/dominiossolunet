@@ -15,7 +15,12 @@ import org.springframework.ui.Model;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests unitarios para RenovacionController.
@@ -93,7 +98,7 @@ class RenovacionControllerTest {
     }
 
     @Test
-    void mostrarFormulario_tokenUsado_noAñadeDatosCliente() {
+    void mostrarFormulario_tokenUsado_noAnadeDatosCliente() {
 
         // Arrange
         ResultadoValidacionRec resultado = new ResultadoValidacionRec(
@@ -140,7 +145,7 @@ class RenovacionControllerTest {
     }
 
     @Test
-    void mostrarFormulario_tokenExpirado_noAñadeDatosCliente() {
+    void mostrarFormulario_tokenExpirado_noAnadeDatosCliente() {
 
         // Arrange
         ResultadoValidacionRec resultado = new ResultadoValidacionRec(
@@ -187,7 +192,7 @@ class RenovacionControllerTest {
     }
 
     @Test
-    void mostrarFormulario_tokenNoEncontrado_noAñadeDatosCliente() {
+    void mostrarFormulario_tokenNoEncontrado_noAnadeDatosCliente() {
 
         // Arrange
         ResultadoValidacionRec resultado = new ResultadoValidacionRec(
@@ -278,6 +283,13 @@ class RenovacionControllerTest {
                 tokenCliente,
                 dominios
         );
+
+        // Debe procesarse exactamente una vez
+        verify(tokenService, org.mockito.Mockito.times(1))
+                .procesarConfirmacion(
+                        tokenCliente,
+                        dominios
+                );
     }
 
     @Test
