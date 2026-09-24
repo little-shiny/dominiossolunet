@@ -4,11 +4,14 @@ import com.dominiossolunet.model.Cliente;
 import com.dominiossolunet.model.Dominio;
 import com.dominiossolunet.model.TokenCliente;
 import com.dominiossolunet.model.enums.Estado;
+import com.dominiossolunet.model.enums.EstadoAvisoRenovacion;
 import com.dominiossolunet.repository.DominioRepository;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -25,16 +28,20 @@ import java.util.stream.Collectors;
 public class RenovacionService {
     private final DominioRepository dominioRepository; // Es final porque va en el constructor
     private final TokenService tokenService;  //idem
+    private final EmailService emailService;
 
     @Value("${renovacion.umbrales}")
     private List<Integer> umbrales;
 
     private int umbralMaximo;
 
+    private static final Logger logger = LoggerFactory.getLogger(RenovacionService.class);
+
     //Constructor
-    public RenovacionService(DominioRepository dominioRepository, TokenService tokenService) {
+    public RenovacionService(DominioRepository dominioRepository, TokenService tokenService, EmailService emailService) {
         this.dominioRepository = dominioRepository;
         this.tokenService = tokenService;
+        this.emailService = emailService;
     }
 
     /**
@@ -66,6 +73,7 @@ public class RenovacionService {
 
     @Transactional
     public void procesarAvisos() {
+        logger.info("Inicio del proceso de avisos");
 
         LocalDate hoy = LocalDate.now();
 
@@ -83,6 +91,7 @@ public class RenovacionService {
                 // Se agrupan los dominios que necesitan un aviso por cliente
                 .collect(Collectors.groupingBy(Dominio::getCliente));
 
+        logger.info("Clientes con dominios por avisar: {}", dominiosPorCliente.size());
 
         /* Se genera un único token por cliente
          * De esta forma si un cliente tiene varios dominios próximos a expirar recibirá un aviso único con todos ellos
@@ -92,9 +101,15 @@ public class RenovacionService {
             Cliente cliente = entrada.getKey();
             List<Dominio> dominios = entrada.getValue();
 
+            logger.info("Procesando cliente {} con {} dominios pendientes",cliente.getNombre(),dominios.size());
+
             TokenCliente token = tokenService.generarToken(cliente, dominios);
 
-            //TODO aqui viene emailService.enviarAviso(cliente, dominios, token);
+            logger.info("Token generado para el cliente {}", cliente.getNombre());
+
+
+
+            //todo emailService.enviarAviso(cliente, dominios, token);
         }
     }
 
@@ -115,8 +130,6 @@ public class RenovacionService {
         if (umbral.equals(dominio.getUltimoUmbralAvisado())) {
             return false;
         }
-
-        actualizarDominio(dominio, umbral, hoy);
 
         return true;
     }
@@ -139,12 +152,19 @@ public class RenovacionService {
     }
 
     /**
-     * Actualiza el dominio cuando se vaya a generar un nuevo aviso
+     * Marcar como avisado un dominio
+     * Recorre la lista de dominios por parametro , guarda su umbral, cambia el estado a aviso como enviado y guarda
+     *
      */
-    private void actualizarDominio(Dominio dominio, Integer umbral, LocalDate hoy) {
-        dominio.setEstado(Estado.AVISO_ENVIADO);
-        dominio.setUltimoUmbralAvisado(umbral);
-        dominio.setUltimoAviso(hoy);
-    }
+    private void marcarComoAvisado(List<Dominio> dominios, LocalDate fechaActual) {
+        for(Dominio dominio : dominios){
 
+           Integer umbral = determinarUmbral(dominio, fechaActual);
+
+           dominio.setEstado(Estado.AVISO_ENVIADO);
+           dominio.setUltimoUmbralAvisado(umbral);
+           dominio.setUltimoAviso(fechaActual);
+
+        }
+    }
 }
