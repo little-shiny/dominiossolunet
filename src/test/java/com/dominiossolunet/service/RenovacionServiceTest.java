@@ -531,7 +531,7 @@ class RenovacionServiceTest {
 
         assertEquals(1, erroresCaptor.getValue().size());
 
-        ErrorEnvioEmail error = erroresCaptor.getValue().get(0);
+        ErrorEnvioEmail error = erroresCaptor.getValue().getFirst();
 
         assertSame(cliente, error.getCliente());
 

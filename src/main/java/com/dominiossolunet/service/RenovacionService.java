@@ -128,8 +128,7 @@ public class RenovacionService {
         if (resultadoInforme.isEnviado()) {
             logger.info("Informe de renovación enviado correctamente al administrador");
         } else {
-            logger.error("No se pudo enviar el informe al administrador");
-            resultadoInforme.getMensajeError();
+            logger.error("No se pudo enviar el informe al administrador - {}", resultadoInforme.getMensajeError());
         }
     }
 
@@ -147,11 +146,7 @@ public class RenovacionService {
             return false;
         }
 
-        if (umbral.equals(dominio.getUltimoUmbralAvisado())) {
-            return false;
-        }
-
-        return true;
+        return !umbral.equals(dominio.getUltimoUmbralAvisado());
     }
 
     /**
