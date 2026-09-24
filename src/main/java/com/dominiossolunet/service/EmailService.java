@@ -8,6 +8,7 @@ import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -65,7 +66,7 @@ public class EmailService {
 
             return new ResultadoEnvioEmail(true,null);
 
-        } catch (MessagingException e) {
+        } catch (MessagingException | MailException e) {
             logger.error("Error enviando el aviso al cliente {}", cliente.getEmail(),e);
             return new ResultadoEnvioEmail(false, e.getMessage());
         }
@@ -95,7 +96,7 @@ public class EmailService {
 
             return new ResultadoEnvioEmail(true,null);
 
-        } catch (MessagingException e) {
+        } catch (MessagingException | MailException e) {
             logger.error("Error enviando el informe de renovación al administrador",e);
             return new ResultadoEnvioEmail(false, e.getMessage());
         }
