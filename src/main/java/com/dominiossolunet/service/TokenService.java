@@ -12,6 +12,8 @@ import com.dominiossolunet.repository.TokenDominioRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -28,6 +30,8 @@ public class TokenService {
 
     private final TokenClienteRepository tokenClienteRepository; //final porque va en el constructor y es unico
     private final TokenDominioRepository tokenDominioRepository;
+    private static final Logger logger =  LoggerFactory.getLogger(TokenService.class);
+
 
     @Value("${token.dias-expiracion}")
     private int diasExpiracionToken;
@@ -39,6 +43,7 @@ public class TokenService {
     }
 
     public TokenCliente generarToken(Cliente cliente, List<Dominio> dominios) {
+
 
         LocalDateTime ahora = LocalDateTime.now();
 
@@ -53,6 +58,8 @@ public class TokenService {
 
         tokenCliente = tokenClienteRepository.save(tokenCliente);
 
+        logger.info("TokenCliente guardado correctamente para el cliente {}", cliente.getNombre());
+
         for (Dominio dominio : dominios) {
             TokenDominio tokenDominio = new TokenDominio();
 
@@ -62,6 +69,9 @@ public class TokenService {
 
             tokenDominioRepository.save(tokenDominio);
         }
+
+        logger.info("Añadidos {} TokenDominios al cliente {}", dominios.size(), cliente.getNombre());
+
         return tokenCliente;
     }
 
@@ -71,6 +81,7 @@ public class TokenService {
         TokenCliente tokenEncontrado;
 
         if (resultado.isPresent()) {
+
             tokenEncontrado = resultado.get();
 
             if (tokenEncontrado.isUsado()) {
@@ -89,9 +100,13 @@ public class TokenService {
     @Transactional
     public void marcarComoUsado(String token) {
 
-        TokenCliente tokenCliente = tokenClienteRepository.findByToken(token).orElseThrow(() -> new IllegalArgumentException("Token no encontrado: " + token));
+        TokenCliente tokenCliente =
+                tokenClienteRepository.findByToken(token).orElseThrow(() ->
+                    new IllegalArgumentException("Token no encontrado: " + token));
 
         tokenCliente.setUsado(true);
+
+        logger.info("Token marcado como usado para el cliente ");
         // No necesitamos save (dirty checking)
     }
 
@@ -120,6 +135,8 @@ public class TokenService {
 
         HashSet<Integer> idsMarcados =
                 new HashSet<>(idsDominiosMarcadosCliente);
+
+        logger.info("{} Dominios marcados por el cliente para renovar", idsDominiosMarcadosCliente.size());
 
         List<TokenDominio> tokenDominioListaCompleta =
                 tokenDominioRepository.findByTokenCliente(tokenCliente);

@@ -1,0 +1,34 @@
+<h2>Informe de renovación de dominios</h2>
+
+<div th:if="${#lists.isEmpty(erroresEnvio)}">
+    <p>No se han producido errores durante el proceso.</p>
+</div>
+
+<div th:unless="${#lists.isEmpty(erroresEnvio)}">
+
+    <p>Se han producido los siguientes errores:</p>
+
+    <div th:each="error : ${erroresEnvio}">
+
+        <h3 th:text="${error.cliente.nombre}"></h3>
+
+        <p>
+            Email:
+            <span th:text="${error.cliente.email}"></span>
+        </p>
+
+        <p>Dominios afectados:</p>
+
+        <ul>
+            <li th:each="dominio : ${error.dominios}"
+                th:text="${dominio.nombreDominio}">
+            </li>
+        </ul>
+
+        <p>
+            Error:
+            <span th:text="${error.mensajeError}"></span>
+        </p>
+
+    </div>
+</div>

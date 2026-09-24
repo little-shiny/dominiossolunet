@@ -1,15 +1,17 @@
 package com.dominiossolunet.service;
 
+import com.dominiossolunet.dto.ErrorEnvioEmail;
+import com.dominiossolunet.dto.ResultadoEnvioEmail;
 import com.dominiossolunet.model.Cliente;
 import com.dominiossolunet.model.Dominio;
 import com.dominiossolunet.model.TokenCliente;
 import com.dominiossolunet.model.enums.Estado;
 import com.dominiossolunet.repository.DominioRepository;
+import com.dominiossolunet.utils.RenovacionUrlBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -21,52 +23,33 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Tests unitarios de RenovacionService.
- * <p>
- * Se comprueba:
- * <p>
- * - Búsqueda de dominios candidatos.
- * - Ignorar dominios expirados.
- * - Determinación de umbrales.
- * - Evitar avisos duplicados.
- * - Actualización del dominio.
- * - Agrupación por cliente.
- * - Generación de un único token por cliente.
- * - Envío de todos los dominios correspondientes al cliente
- * al TokenService.
- */
 @ExtendWith(MockitoExtension.class)
 class RenovacionServiceTest {
 
     private final List<Integer> UMBRALES = List.of(30, 15, 5, 1);
+
     @Mock
     private DominioRepository dominioRepository;
+
     @Mock
     private TokenService tokenService;
-    @InjectMocks
+
+    @Mock
+    private RenovacionUrlBuilder renovacionUrlBuilder;
+
+    @Mock
+    private EmailService emailService;
+
     private RenovacionService renovacionService;
 
     @BeforeEach
     void setUp() {
 
-        /*
-         * @Value no se ejecuta en un test unitario con Mockito,
-         * por lo que inyectamos manualmente los umbrales.
-         */
-        ReflectionTestUtils.setField(
-                renovacionService,
-                "umbrales",
-                UMBRALES
-        );
+        renovacionService = new RenovacionService(dominioRepository, tokenService, emailService, renovacionUrlBuilder);
 
-        /*
-         * Simulamos el comportamiento de @PostConstruct.
-         */
-        ReflectionTestUtils.invokeMethod(
-                renovacionService,
-                "calcularUmbralMaximo"
-        );
+        ReflectionTestUtils.setField(renovacionService, "umbrales", UMBRALES);
+
+        ReflectionTestUtils.invokeMethod(renovacionService, "calcularUmbralMaximo");
     }
 
     // =========================================================
@@ -77,24 +60,19 @@ class RenovacionServiceTest {
     void procesarAvisos_noHayCandidatos_noHaceNada() {
 
         // Arrange
-        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(
-                anyList(),
-                any(LocalDate.class)
-        )).thenReturn(List.of());
+        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(anyList(), any(LocalDate.class))).thenReturn(List.of());
+
+        when(emailService.enviarInformeRenovacion(anyList())).thenReturn(new ResultadoEnvioEmail(true, null));
 
         // Act
         renovacionService.procesarAvisos();
 
         // Assert
-        verify(dominioRepository).findByEstadoInAndFechaExpiracionLessThanEqual(
-                eq(List.of(
-                        Estado.ACTIVO,
-                        Estado.AVISO_ENVIADO
-                )),
-                eq(LocalDate.now().plusDays(30))
-        );
+        verify(dominioRepository).findByEstadoInAndFechaExpiracionLessThanEqual(eq(List.of(Estado.ACTIVO, Estado.AVISO_ENVIADO)), eq(LocalDate.now().plusDays(30)));
 
         verifyNoInteractions(tokenService);
+
+        verify(emailService).enviarInformeRenovacion(eq(List.of()));
     }
 
     // =========================================================
@@ -107,47 +85,27 @@ class RenovacionServiceTest {
         // Arrange
         Cliente cliente = crearCliente("Ana", "ana@test.com");
 
-        Dominio dominio = crearDominio(
-                cliente,
-                LocalDate.now().plusDays(30)
-        );
+        Dominio dominio = crearDominio(cliente, LocalDate.now().plusDays(30));
 
-        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(
-                anyList(),
-                any(LocalDate.class)
-        )).thenReturn(List.of(dominio));
+        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(anyList(), any(LocalDate.class))).thenReturn(List.of(dominio));
 
-        TokenCliente token = new TokenCliente();
-
-        when(tokenService.generarToken(
-                eq(cliente),
-                anyList()
-        )).thenReturn(token);
+        prepararEnvioEmailCorrecto();
 
         // Act
         renovacionService.procesarAvisos();
 
         // Assert
+        assertEquals(Estado.AVISO_ENVIADO, dominio.getEstado());
 
-        assertEquals(
-                Estado.AVISO_ENVIADO,
-                dominio.getEstado()
-        );
+        assertEquals(30, dominio.getUltimoUmbralAvisado());
 
-        assertEquals(
-                30,
-                dominio.getUltimoUmbralAvisado()
-        );
+        assertEquals(LocalDate.now(), dominio.getUltimoAviso());
 
-        assertEquals(
-                LocalDate.now(),
-                dominio.getUltimoAviso()
-        );
+        verify(tokenService).generarToken(eq(cliente), eq(List.of(dominio)));
 
-        verify(tokenService).generarToken(
-                eq(cliente),
-                eq(List.of(dominio))
-        );
+        verify(emailService).enviarAvisoRenovacion(eq(cliente), eq(List.of(dominio)), eq("http://localhost/renovacion/test"));
+
+        verify(emailService).enviarInformeRenovacion(eq(List.of()));
     }
 
     // =========================================================
@@ -160,34 +118,19 @@ class RenovacionServiceTest {
         // Arrange
         Cliente cliente = crearCliente("Ana", "ana@test.com");
 
-        Dominio dominio = crearDominio(
-                cliente,
-                LocalDate.now().plusDays(27)
-        );
+        Dominio dominio = crearDominio(cliente, LocalDate.now().plusDays(27));
 
-        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(
-                anyList(),
-                any(LocalDate.class)
-        )).thenReturn(List.of(dominio));
+        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(anyList(), any(LocalDate.class))).thenReturn(List.of(dominio));
 
-        when(tokenService.generarToken(
-                any(Cliente.class),
-                anyList()
-        )).thenReturn(new TokenCliente());
+        prepararEnvioEmailCorrecto();
 
         // Act
         renovacionService.procesarAvisos();
 
         // Assert
-        assertEquals(
-                30,
-                dominio.getUltimoUmbralAvisado()
-        );
+        assertEquals(30, dominio.getUltimoUmbralAvisado());
 
-        assertEquals(
-                Estado.AVISO_ENVIADO,
-                dominio.getEstado()
-        );
+        assertEquals(Estado.AVISO_ENVIADO, dominio.getEstado());
     }
 
     // =========================================================
@@ -200,29 +143,17 @@ class RenovacionServiceTest {
         // Arrange
         Cliente cliente = crearCliente("Ana", "ana@test.com");
 
-        Dominio dominio = crearDominio(
-                cliente,
-                LocalDate.now().plusDays(15)
-        );
+        Dominio dominio = crearDominio(cliente, LocalDate.now().plusDays(15));
 
-        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(
-                anyList(),
-                any(LocalDate.class)
-        )).thenReturn(List.of(dominio));
+        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(anyList(), any(LocalDate.class))).thenReturn(List.of(dominio));
 
-        when(tokenService.generarToken(
-                any(Cliente.class),
-                anyList()
-        )).thenReturn(new TokenCliente());
+        prepararEnvioEmailCorrecto();
 
         // Act
         renovacionService.procesarAvisos();
 
         // Assert
-        assertEquals(
-                15,
-                dominio.getUltimoUmbralAvisado()
-        );
+        assertEquals(15, dominio.getUltimoUmbralAvisado());
     }
 
     // =========================================================
@@ -235,29 +166,17 @@ class RenovacionServiceTest {
         // Arrange
         Cliente cliente = crearCliente("Ana", "ana@test.com");
 
-        Dominio dominio = crearDominio(
-                cliente,
-                LocalDate.now().plusDays(5)
-        );
+        Dominio dominio = crearDominio(cliente, LocalDate.now().plusDays(5));
 
-        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(
-                anyList(),
-                any(LocalDate.class)
-        )).thenReturn(List.of(dominio));
+        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(anyList(), any(LocalDate.class))).thenReturn(List.of(dominio));
 
-        when(tokenService.generarToken(
-                any(Cliente.class),
-                anyList()
-        )).thenReturn(new TokenCliente());
+        prepararEnvioEmailCorrecto();
 
         // Act
         renovacionService.procesarAvisos();
 
         // Assert
-        assertEquals(
-                5,
-                dominio.getUltimoUmbralAvisado()
-        );
+        assertEquals(5, dominio.getUltimoUmbralAvisado());
     }
 
     // =========================================================
@@ -270,29 +189,17 @@ class RenovacionServiceTest {
         // Arrange
         Cliente cliente = crearCliente("Ana", "ana@test.com");
 
-        Dominio dominio = crearDominio(
-                cliente,
-                LocalDate.now().plusDays(1)
-        );
+        Dominio dominio = crearDominio(cliente, LocalDate.now().plusDays(1));
 
-        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(
-                anyList(),
-                any(LocalDate.class)
-        )).thenReturn(List.of(dominio));
+        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(anyList(), any(LocalDate.class))).thenReturn(List.of(dominio));
 
-        when(tokenService.generarToken(
-                any(Cliente.class),
-                anyList()
-        )).thenReturn(new TokenCliente());
+        prepararEnvioEmailCorrecto();
 
         // Act
         renovacionService.procesarAvisos();
 
         // Assert
-        assertEquals(
-                1,
-                dominio.getUltimoUmbralAvisado()
-        );
+        assertEquals(1, dominio.getUltimoUmbralAvisado());
     }
 
     // =========================================================
@@ -305,15 +212,11 @@ class RenovacionServiceTest {
         // Arrange
         Cliente cliente = crearCliente("Ana", "ana@test.com");
 
-        Dominio dominio = crearDominio(
-                cliente,
-                LocalDate.now().minusDays(1)
-        );
+        Dominio dominio = crearDominio(cliente, LocalDate.now().minusDays(1));
 
-        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(
-                anyList(),
-                any(LocalDate.class)
-        )).thenReturn(List.of(dominio));
+        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(anyList(), any(LocalDate.class))).thenReturn(List.of(dominio));
+
+        when(emailService.enviarInformeRenovacion(anyList())).thenReturn(new ResultadoEnvioEmail(true, null));
 
         // Act
         renovacionService.procesarAvisos();
@@ -321,9 +224,9 @@ class RenovacionServiceTest {
         // Assert
         verifyNoInteractions(tokenService);
 
-        assertNull(
-                dominio.getUltimoUmbralAvisado()
-        );
+        assertNull(dominio.getUltimoUmbralAvisado());
+
+        verify(emailService).enviarInformeRenovacion(eq(List.of()));
     }
 
     // =========================================================
@@ -336,17 +239,13 @@ class RenovacionServiceTest {
         // Arrange
         Cliente cliente = crearCliente("Ana", "ana@test.com");
 
-        Dominio dominio = crearDominio(
-                cliente,
-                LocalDate.now().plusDays(27)
-        );
+        Dominio dominio = crearDominio(cliente, LocalDate.now().plusDays(27));
 
         dominio.setUltimoUmbralAvisado(30);
 
-        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(
-                anyList(),
-                any(LocalDate.class)
-        )).thenReturn(List.of(dominio));
+        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(anyList(), any(LocalDate.class))).thenReturn(List.of(dominio));
+
+        when(emailService.enviarInformeRenovacion(anyList())).thenReturn(new ResultadoEnvioEmail(true, null));
 
         // Act
         renovacionService.procesarAvisos();
@@ -354,10 +253,7 @@ class RenovacionServiceTest {
         // Assert
         verifyNoInteractions(tokenService);
 
-        assertEquals(
-                30,
-                dominio.getUltimoUmbralAvisado()
-        );
+        assertEquals(30, dominio.getUltimoUmbralAvisado());
     }
 
     // =========================================================
@@ -370,54 +266,25 @@ class RenovacionServiceTest {
         // Arrange
         Cliente cliente = crearCliente("Ana", "ana@test.com");
 
-        /*
-         * El dominio está a 14 días.
-         *
-         * Su último aviso fue a los 30 días.
-         *
-         * Ahora corresponde el umbral de 15.
-         */
-        Dominio dominio = crearDominio(
-                cliente,
-                LocalDate.now().plusDays(14)
-        );
+        Dominio dominio = crearDominio(cliente, LocalDate.now().plusDays(14));
 
         dominio.setUltimoUmbralAvisado(30);
 
-        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(
-                anyList(),
-                any(LocalDate.class)
-        )).thenReturn(List.of(dominio));
+        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(anyList(), any(LocalDate.class))).thenReturn(List.of(dominio));
 
-        when(tokenService.generarToken(
-                any(Cliente.class),
-                anyList()
-        )).thenReturn(new TokenCliente());
+        prepararEnvioEmailCorrecto();
 
         // Act
         renovacionService.procesarAvisos();
 
         // Assert
+        assertEquals(15, dominio.getUltimoUmbralAvisado());
 
-        assertEquals(
-                15,
-                dominio.getUltimoUmbralAvisado()
-        );
+        assertEquals(Estado.AVISO_ENVIADO, dominio.getEstado());
 
-        assertEquals(
-                Estado.AVISO_ENVIADO,
-                dominio.getEstado()
-        );
+        assertEquals(LocalDate.now(), dominio.getUltimoAviso());
 
-        assertEquals(
-                LocalDate.now(),
-                dominio.getUltimoAviso()
-        );
-
-        verify(tokenService).generarToken(
-                eq(cliente),
-                eq(List.of(dominio))
-        );
+        verify(tokenService).generarToken(eq(cliente), eq(List.of(dominio)));
     }
 
     // =========================================================
@@ -428,69 +295,33 @@ class RenovacionServiceTest {
     void procesarAvisos_dosDominiosMismoCliente_generaUnSoloToken() {
 
         // Arrange
+        Cliente cliente = crearCliente("Ana", "ana@test.com");
 
-        Cliente cliente = crearCliente(
-                "Ana",
-                "ana@test.com"
-        );
+        Dominio dominio1 = crearDominio(cliente, LocalDate.now().plusDays(27));
 
-        Dominio dominio1 = crearDominio(
-                cliente,
-                LocalDate.now().plusDays(27)
-        );
+        Dominio dominio2 = crearDominio(cliente, LocalDate.now().plusDays(10));
 
-        Dominio dominio2 = crearDominio(
-                cliente,
-                LocalDate.now().plusDays(10)
-        );
+        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(anyList(), any(LocalDate.class))).thenReturn(List.of(dominio1, dominio2));
 
-        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(
-                anyList(),
-                any(LocalDate.class)
-        )).thenReturn(List.of(
-                dominio1,
-                dominio2
-        ));
-
-        when(tokenService.generarToken(
-                any(Cliente.class),
-                anyList()
-        )).thenReturn(new TokenCliente());
+        prepararEnvioEmailCorrecto();
 
         // Act
         renovacionService.procesarAvisos();
 
         // Assert
+        ArgumentCaptor<Cliente> clienteCaptor = ArgumentCaptor.forClass(Cliente.class);
 
-        ArgumentCaptor<Cliente> clienteCaptor =
-                ArgumentCaptor.forClass(Cliente.class);
+        @SuppressWarnings("unchecked") ArgumentCaptor<List<Dominio>> dominiosCaptor = ArgumentCaptor.forClass(List.class);
 
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<Dominio>> dominiosCaptor =
-                ArgumentCaptor.forClass(List.class);
+        verify(tokenService, times(1)).generarToken(clienteCaptor.capture(), dominiosCaptor.capture());
 
-        verify(tokenService, times(1)).generarToken(
-                clienteCaptor.capture(),
-                dominiosCaptor.capture()
-        );
+        assertSame(cliente, clienteCaptor.getValue());
 
-        assertSame(
-                cliente,
-                clienteCaptor.getValue()
-        );
+        assertEquals(2, dominiosCaptor.getValue().size());
 
-        assertEquals(
-                2,
-                dominiosCaptor.getValue().size()
-        );
+        assertTrue(dominiosCaptor.getValue().contains(dominio1));
 
-        assertTrue(
-                dominiosCaptor.getValue().contains(dominio1)
-        );
-
-        assertTrue(
-                dominiosCaptor.getValue().contains(dominio2)
-        );
+        assertTrue(dominiosCaptor.getValue().contains(dominio2));
     }
 
     // =========================================================
@@ -501,69 +332,33 @@ class RenovacionServiceTest {
     void procesarAvisos_dosClientes_generaUnTokenPorCliente() {
 
         // Arrange
+        Cliente cliente1 = crearCliente("Ana", "ana@test.com");
 
-        Cliente cliente1 = crearCliente(
-                "Ana",
-                "ana@test.com"
-        );
+        Cliente cliente2 = crearCliente("Laura", "laura@test.com");
 
-        Cliente cliente2 = crearCliente(
-                "Laura",
-                "laura@test.com"
-        );
+        Dominio dominio1 = crearDominio(cliente1, LocalDate.now().plusDays(20));
 
-        Dominio dominio1 = crearDominio(
-                cliente1,
-                LocalDate.now().plusDays(20)
-        );
+        Dominio dominio2 = crearDominio(cliente2, LocalDate.now().plusDays(10));
 
-        Dominio dominio2 = crearDominio(
-                cliente2,
-                LocalDate.now().plusDays(10)
-        );
+        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(anyList(), any(LocalDate.class))).thenReturn(List.of(dominio1, dominio2));
 
-        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(
-                anyList(),
-                any(LocalDate.class)
-        )).thenReturn(List.of(
-                dominio1,
-                dominio2
-        ));
-
-        when(tokenService.generarToken(
-                any(Cliente.class),
-                anyList()
-        )).thenReturn(new TokenCliente());
+        prepararEnvioEmailCorrecto();
 
         // Act
         renovacionService.procesarAvisos();
 
         // Assert
+        ArgumentCaptor<Cliente> clienteCaptor = ArgumentCaptor.forClass(Cliente.class);
 
-        ArgumentCaptor<Cliente> clienteCaptor =
-                ArgumentCaptor.forClass(Cliente.class);
+        @SuppressWarnings("unchecked") ArgumentCaptor<List<Dominio>> dominiosCaptor = ArgumentCaptor.forClass(List.class);
 
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<Dominio>> dominiosCaptor =
-                ArgumentCaptor.forClass(List.class);
+        verify(tokenService, times(2)).generarToken(clienteCaptor.capture(), dominiosCaptor.capture());
 
-        verify(tokenService, times(2)).generarToken(
-                clienteCaptor.capture(),
-                dominiosCaptor.capture()
-        );
+        assertEquals(2, clienteCaptor.getAllValues().size());
 
-        assertEquals(
-                2,
-                clienteCaptor.getAllValues().size()
-        );
+        assertTrue(clienteCaptor.getAllValues().contains(cliente1));
 
-        assertTrue(
-                clienteCaptor.getAllValues().contains(cliente1)
-        );
-
-        assertTrue(
-                clienteCaptor.getAllValues().contains(cliente2)
-        );
+        assertTrue(clienteCaptor.getAllValues().contains(cliente2));
     }
 
     // =========================================================
@@ -574,45 +369,23 @@ class RenovacionServiceTest {
     void procesarAvisos_dominioFueraDeUmbrales_noGeneraAviso() {
 
         // Arrange
+        Cliente cliente = crearCliente("Ana", "ana@test.com");
 
-        Cliente cliente = crearCliente(
-                "Ana",
-                "ana@test.com"
-        );
+        Dominio dominio = crearDominio(cliente, LocalDate.now().plusDays(40));
 
-        /*
-         * El dominio está a 40 días.
-         *
-         * El mayor umbral configurado es 30.
-         */
-        Dominio dominio = crearDominio(
-                cliente,
-                LocalDate.now().plusDays(40)
-        );
+        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(anyList(), any(LocalDate.class))).thenReturn(List.of(dominio));
 
-        /*
-         * Lo devolvemos manualmente desde el repository para
-         * comprobar que el servicio también protege este caso.
-         */
-        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(
-                anyList(),
-                any(LocalDate.class)
-        )).thenReturn(List.of(dominio));
+        when(emailService.enviarInformeRenovacion(anyList())).thenReturn(new ResultadoEnvioEmail(true, null));
 
         // Act
         renovacionService.procesarAvisos();
 
         // Assert
-
         verifyNoInteractions(tokenService);
 
-        assertNull(
-                dominio.getUltimoUmbralAvisado()
-        );
+        assertNull(dominio.getUltimoUmbralAvisado());
 
-        assertNull(
-                dominio.getUltimoAviso()
-        );
+        assertNull(dominio.getUltimoAviso());
     }
 
     // =========================================================
@@ -623,48 +396,25 @@ class RenovacionServiceTest {
     void procesarAvisos_actualizaEstadoDelDominio() {
 
         // Arrange
+        Cliente cliente = crearCliente("Ana", "ana@test.com");
 
-        Cliente cliente = crearCliente(
-                "Ana",
-                "ana@test.com"
-        );
-
-        Dominio dominio = crearDominio(
-                cliente,
-                LocalDate.now().plusDays(20)
-        );
+        Dominio dominio = crearDominio(cliente, LocalDate.now().plusDays(20));
 
         dominio.setEstado(Estado.ACTIVO);
 
-        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(
-                anyList(),
-                any(LocalDate.class)
-        )).thenReturn(List.of(dominio));
+        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(anyList(), any(LocalDate.class))).thenReturn(List.of(dominio));
 
-        when(tokenService.generarToken(
-                any(Cliente.class),
-                anyList()
-        )).thenReturn(new TokenCliente());
+        prepararEnvioEmailCorrecto();
 
         // Act
         renovacionService.procesarAvisos();
 
         // Assert
+        assertEquals(Estado.AVISO_ENVIADO, dominio.getEstado());
 
-        assertEquals(
-                Estado.AVISO_ENVIADO,
-                dominio.getEstado()
-        );
+        assertEquals(30, dominio.getUltimoUmbralAvisado());
 
-        assertEquals(
-                30,
-                dominio.getUltimoUmbralAvisado()
-        );
-
-        assertEquals(
-                LocalDate.now(),
-                dominio.getUltimoAviso()
-        );
+        assertEquals(LocalDate.now(), dominio.getUltimoAviso());
     }
 
     // =========================================================
@@ -675,45 +425,27 @@ class RenovacionServiceTest {
     void procesarAvisos_dominioConUltimoAvisoAntiguoMismoUmbral_noRepiteAviso() {
 
         // Arrange
+        Cliente cliente = crearCliente("Ana", "ana@test.com");
 
-        Cliente cliente = crearCliente(
-                "Ana",
-                "ana@test.com"
-        );
-
-        Dominio dominio = crearDominio(
-                cliente,
-                LocalDate.now().plusDays(25)
-        );
+        Dominio dominio = crearDominio(cliente, LocalDate.now().plusDays(25));
 
         dominio.setUltimoUmbralAvisado(30);
         dominio.setUltimoAviso(LocalDate.now().minusDays(5));
         dominio.setEstado(Estado.AVISO_ENVIADO);
 
-        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(
-                anyList(),
-                any(LocalDate.class)
-        )).thenReturn(List.of(dominio));
+        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(anyList(), any(LocalDate.class))).thenReturn(List.of(dominio));
+
+        when(emailService.enviarInformeRenovacion(anyList())).thenReturn(new ResultadoEnvioEmail(true, null));
 
         // Act
         renovacionService.procesarAvisos();
 
         // Assert
-
         verifyNoInteractions(tokenService);
 
-        /*
-         * La fecha del último aviso tampoco debe modificarse.
-         */
-        assertEquals(
-                LocalDate.now().minusDays(5),
-                dominio.getUltimoAviso()
-        );
+        assertEquals(LocalDate.now().minusDays(5), dominio.getUltimoAviso());
 
-        assertEquals(
-                30,
-                dominio.getUltimoUmbralAvisado()
-        );
+        assertEquals(30, dominio.getUltimoUmbralAvisado());
     }
 
     // =========================================================
@@ -724,34 +456,14 @@ class RenovacionServiceTest {
     void calcularUmbralMaximo_sinUmbrales_lanzaExcepcion() {
 
         // Arrange
+        RenovacionService service = new RenovacionService(dominioRepository, tokenService, emailService, renovacionUrlBuilder);
 
-        RenovacionService service =
-                new RenovacionService(
-                        dominioRepository,
-                        tokenService
-                );
-
-        ReflectionTestUtils.setField(
-                service,
-                "umbrales",
-                List.of()
-        );
+        ReflectionTestUtils.setField(service, "umbrales", List.of());
 
         // Act + Assert
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> ReflectionTestUtils.invokeMethod(service, "calcularUmbralMaximo"));
 
-        IllegalStateException exception =
-                assertThrows(
-                        IllegalStateException.class,
-                        () -> ReflectionTestUtils.invokeMethod(
-                                service,
-                                "calcularUmbralMaximo"
-                        )
-                );
-
-        assertEquals(
-                "Debe existir al menos un umbral de renovación configurado",
-                exception.getMessage()
-        );
+        assertEquals("Debe existir al menos un umbral de renovación configurado", exception.getMessage());
     }
 
     // =========================================================
@@ -762,47 +474,250 @@ class RenovacionServiceTest {
     void calcularUmbralMaximo_conUmbralesConfigurados_calculaMayorUmbral() {
 
         // Arrange
+        RenovacionService service = new RenovacionService(dominioRepository, tokenService, emailService, renovacionUrlBuilder);
 
-        RenovacionService service =
-                new RenovacionService(
-                        dominioRepository,
-                        tokenService
-                );
-
-        ReflectionTestUtils.setField(
-                service,
-                "umbrales",
-                List.of(1, 5, 15, 30)
-        );
+        ReflectionTestUtils.setField(service, "umbrales", List.of(1, 5, 15, 30));
 
         // Act
-
-        ReflectionTestUtils.invokeMethod(
-                service,
-                "calcularUmbralMaximo"
-        );
+        ReflectionTestUtils.invokeMethod(service, "calcularUmbralMaximo");
 
         // Assert
+        int umbralMaximo = (int) ReflectionTestUtils.getField(service, "umbralMaximo");
 
-        int umbralMaximo =
-                (int) ReflectionTestUtils.getField(
-                        service,
-                        "umbralMaximo"
-                );
+        assertEquals(30, umbralMaximo);
+    }
 
-        assertEquals(
-                30,
-                umbralMaximo
-        );
+    // =========================================================
+    // TEST 17
+    // =========================================================
+
+    @Test
+    void procesarAvisos_emailFalla_noMarcaDominioYRegistraError() {
+
+        // Arrange
+        Cliente cliente = crearCliente("Ana", "ana@test.com");
+
+        Dominio dominio = crearDominio(cliente, LocalDate.now().plusDays(20));
+
+        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(anyList(), any(LocalDate.class))).thenReturn(List.of(dominio));
+
+        TokenCliente token = crearToken("token-test");
+
+        when(tokenService.generarToken(any(Cliente.class), anyList())).thenReturn(token);
+
+        when(renovacionUrlBuilder.construirUrlConfirmacion(anyString())).thenReturn("http://localhost/renovacion/test");
+
+        when(emailService.enviarAvisoRenovacion(any(), anyList(), anyString())).thenReturn(new ResultadoEnvioEmail(false, "Error de prueba"));
+
+        when(emailService.enviarInformeRenovacion(anyList())).thenReturn(new ResultadoEnvioEmail(true, null));
+
+        // Act
+        renovacionService.procesarAvisos();
+
+        // Assert
+        assertEquals(Estado.ACTIVO, dominio.getEstado());
+
+        assertNull(dominio.getUltimoUmbralAvisado());
+
+        assertNull(dominio.getUltimoAviso());
+
+        verify(tokenService).generarToken(eq(cliente), eq(List.of(dominio)));
+
+        verify(emailService).enviarAvisoRenovacion(eq(cliente), eq(List.of(dominio)), eq("http://localhost/renovacion/test"));
+
+        ArgumentCaptor<List<ErrorEnvioEmail>> erroresCaptor = ArgumentCaptor.forClass(List.class);
+
+        verify(emailService).enviarInformeRenovacion(erroresCaptor.capture());
+
+        assertEquals(1, erroresCaptor.getValue().size());
+
+        ErrorEnvioEmail error = erroresCaptor.getValue().getFirst();
+
+        assertSame(cliente, error.getCliente());
+
+        assertEquals(List.of(dominio), error.getDominios());
+
+        assertEquals("Error de prueba", error.getMensajeError());
+    }
+
+    // =========================================================
+    // TEST 18
+    // =========================================================
+
+    @Test
+    void procesarAvisos_unClienteFalla_otroClienteContinua() {
+
+        // Arrange
+        Cliente cliente1 = crearCliente("Ana", "ana@test.com");
+
+        Cliente cliente2 = crearCliente("Laura", "laura@test.com");
+
+        Dominio dominio1 = crearDominio(cliente1, LocalDate.now().plusDays(20));
+
+        Dominio dominio2 = crearDominio(cliente2, LocalDate.now().plusDays(10));
+
+        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(anyList(), any(LocalDate.class))).thenReturn(List.of(dominio1, dominio2));
+
+        TokenCliente token = crearToken("token-test");
+
+        when(tokenService.generarToken(any(Cliente.class), anyList())).thenReturn(token);
+
+        when(renovacionUrlBuilder.construirUrlConfirmacion(anyString())).thenReturn("http://localhost/renovacion/test");
+
+        when(emailService.enviarAvisoRenovacion(eq(cliente1), anyList(), anyString())).thenReturn(new ResultadoEnvioEmail(false, "Error cliente 1"));
+
+        when(emailService.enviarAvisoRenovacion(eq(cliente2), anyList(), anyString())).thenReturn(new ResultadoEnvioEmail(true, null));
+
+        when(emailService.enviarInformeRenovacion(anyList())).thenReturn(new ResultadoEnvioEmail(true, null));
+
+        // Act
+        renovacionService.procesarAvisos();
+
+        // Assert
+        assertEquals(Estado.ACTIVO, dominio1.getEstado());
+
+        assertEquals(Estado.AVISO_ENVIADO, dominio2.getEstado());
+
+        verify(emailService, times(2)).enviarAvisoRenovacion(any(), anyList(), anyString());
+
+        ArgumentCaptor<List<ErrorEnvioEmail>> erroresCaptor = ArgumentCaptor.forClass(List.class);
+
+        verify(emailService).enviarInformeRenovacion(erroresCaptor.capture());
+
+        assertEquals(1, erroresCaptor.getValue().size());
+
+        assertSame(cliente1, erroresCaptor.getValue().get(0).getCliente());
+    }
+
+    // =========================================================
+    // TEST 19
+    // =========================================================
+
+    @Test
+    void procesarAvisos_emailCorrecto_marcaTodosLosDominiosDelCliente() {
+
+        // Arrange
+        Cliente cliente = crearCliente("Ana", "ana@test.com");
+
+        Dominio dominio1 = crearDominio(cliente, LocalDate.now().plusDays(25));
+
+        Dominio dominio2 = crearDominio(cliente, LocalDate.now().plusDays(10));
+
+        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(anyList(), any(LocalDate.class))).thenReturn(List.of(dominio1, dominio2));
+
+        prepararEnvioEmailCorrecto();
+
+        // Act
+        renovacionService.procesarAvisos();
+
+        // Assert
+        assertEquals(Estado.AVISO_ENVIADO, dominio1.getEstado());
+
+        assertEquals(Estado.AVISO_ENVIADO, dominio2.getEstado());
+
+        assertEquals(30, dominio1.getUltimoUmbralAvisado());
+
+        assertEquals(15, dominio2.getUltimoUmbralAvisado());
+    }
+
+    // =========================================================
+    // TEST 20
+    // =========================================================
+
+    @Test
+    void procesarAvisos_emailFalla_seGeneraInformeConError() {
+
+        // Arrange
+        Cliente cliente = crearCliente("Ana", "ana@test.com");
+
+        Dominio dominio = crearDominio(cliente, LocalDate.now().plusDays(20));
+
+        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(anyList(), any(LocalDate.class))).thenReturn(List.of(dominio));
+
+        TokenCliente token = crearToken("token-test");
+
+        when(tokenService.generarToken(any(Cliente.class), anyList())).thenReturn(token);
+
+        when(renovacionUrlBuilder.construirUrlConfirmacion(anyString())).thenReturn("http://localhost/renovacion/test");
+
+        when(emailService.enviarAvisoRenovacion(any(), anyList(), anyString())).thenReturn(new ResultadoEnvioEmail(false, "No se pudo conectar con el servidor SMTP"));
+
+        when(emailService.enviarInformeRenovacion(anyList())).thenReturn(new ResultadoEnvioEmail(true, null));
+
+        // Act
+        renovacionService.procesarAvisos();
+
+        // Assert
+        ArgumentCaptor<List<ErrorEnvioEmail>> captor = ArgumentCaptor.forClass(List.class);
+
+        verify(emailService).enviarInformeRenovacion(captor.capture());
+
+        List<ErrorEnvioEmail> errores = captor.getValue();
+
+        assertEquals(1, errores.size());
+
+        assertEquals("No se pudo conectar con el servidor SMTP", errores.get(0).getMensajeError());
+    }
+
+    // =========================================================
+    // TEST 21
+    // =========================================================
+
+    @Test
+    void procesarAvisos_emailFalla_tokenSeGeneraIgualmente() {
+
+        // Arrange
+        Cliente cliente = crearCliente("Ana", "ana@test.com");
+
+        Dominio dominio = crearDominio(cliente, LocalDate.now().plusDays(20));
+
+        when(dominioRepository.findByEstadoInAndFechaExpiracionLessThanEqual(anyList(), any(LocalDate.class))).thenReturn(List.of(dominio));
+
+        TokenCliente token = crearToken("token-test");
+
+        when(tokenService.generarToken(any(Cliente.class), anyList())).thenReturn(token);
+
+        when(renovacionUrlBuilder.construirUrlConfirmacion(anyString())).thenReturn("http://localhost/renovacion/test");
+
+        when(emailService.enviarAvisoRenovacion(any(), anyList(), anyString())).thenReturn(new ResultadoEnvioEmail(false, "Error de prueba"));
+
+        when(emailService.enviarInformeRenovacion(anyList())).thenReturn(new ResultadoEnvioEmail(true, null));
+
+        // Act
+        renovacionService.procesarAvisos();
+
+        // Assert
+        verify(tokenService).generarToken(eq(cliente), eq(List.of(dominio)));
+
+        assertEquals(Estado.ACTIVO, dominio.getEstado());
     }
 
     // =========================================================
     // MÉTODOS AUXILIARES
     // =========================================================
 
-    private Cliente crearCliente(
-            String nombre,
-            String email) {
+    private void prepararEnvioEmailCorrecto() {
+
+        TokenCliente token = crearToken("token-test");
+
+        when(tokenService.generarToken(any(Cliente.class), anyList())).thenReturn(token);
+
+        when(renovacionUrlBuilder.construirUrlConfirmacion(anyString())).thenReturn("http://localhost/renovacion/test");
+
+        when(emailService.enviarAvisoRenovacion(any(), anyList(), anyString())).thenReturn(new ResultadoEnvioEmail(true, null));
+
+        when(emailService.enviarInformeRenovacion(anyList())).thenReturn(new ResultadoEnvioEmail(true, null));
+    }
+
+    private TokenCliente crearToken(String valor) {
+
+        TokenCliente token = new TokenCliente();
+        token.setToken(valor);
+
+        return token;
+    }
+
+    private Cliente crearCliente(String nombre, String email) {
 
         Cliente cliente = new Cliente();
 
@@ -812,9 +727,7 @@ class RenovacionServiceTest {
         return cliente;
     }
 
-    private Dominio crearDominio(
-            Cliente cliente,
-            LocalDate fechaExpiracion) {
+    private Dominio crearDominio(Cliente cliente, LocalDate fechaExpiracion) {
 
         Dominio dominio = new Dominio();
 
