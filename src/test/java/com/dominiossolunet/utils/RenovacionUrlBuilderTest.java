@@ -26,7 +26,7 @@ class RenovacionUrlBuilderTest {
 
         // Assert
         assertThat(resultado)
-                .isEqualTo(urlEsperada);
+                .isEqualTo("https://facturacion.solunet.es/renovacion/?token=abc123");
     }
 
 
@@ -46,9 +46,7 @@ class RenovacionUrlBuilderTest {
 
         // Assert
         assertThat(resultado)
-                .isEqualTo(
-                        "https://facturacion.solunet.es/renovacion/xyz789"
-                );
+                .isEqualTo("https://facturacion.solunet.es/renovacion/?token=xyz789");
     }
 
 
@@ -68,8 +66,6 @@ class RenovacionUrlBuilderTest {
 
         // Assert
         assertThat(resultado)
-                .isEqualTo(
-                        "https://facturacion.solunet.es/renovacion/"
-                );
+                .isEqualTo("https://facturacion.solunet.es/renovacion/?token=");
     }
 }

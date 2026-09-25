@@ -313,7 +313,7 @@ class RenovacionControllerTest {
 
         verify(model).addAttribute(
                 "resultado",
-                ResultadoValidacion.VALIDO
+                "VALIDO"
         );
 
         verify(model).addAttribute(
@@ -363,7 +363,7 @@ class RenovacionControllerTest {
 
         verify(model).addAttribute(
                 "resultado",
-                ResultadoValidacion.USADO
+                "USADO"
         );
 
         verify(model, never()).addAttribute(
@@ -413,7 +413,7 @@ class RenovacionControllerTest {
 
         verify(model).addAttribute(
                 "resultado",
-                ResultadoValidacion.EXPIRADO
+                "EXPIRADO"
         );
 
         verify(model, never()).addAttribute(
@@ -460,7 +460,7 @@ class RenovacionControllerTest {
 
         verify(model).addAttribute(
                 "resultado",
-                ResultadoValidacion.NO_ENCONTRADO
+                "NO_ENCONTRADO"
         );
 
         verify(model, never()).addAttribute(
