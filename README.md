@@ -1,475 +1,227 @@
-# Estado actual (WIP)
+# Dominios Solunet
+
+Application for managing domain renewal notifications and processing client responses.
+
+The system automatically detects domains approaching their expiration date, groups them by client and sends a renewal notification containing a secure confirmation link.
+
+## Features
+
+* Automatic detection of domains approaching expiration.
+* Configurable renewal notification thresholds.
+* Scheduled renewal processing with Spring Scheduler.
+* Domain grouping by client.
+* Secure, expiring and single-use confirmation tokens.
+* Email notifications for clients.
+* Web-based renewal confirmation using Thymeleaf.
+* Selection of individual domains to renew.
+* Ability to reject all domains.
+* Client/domain ownership validation.
+* Domain status updates after confirmation.
+* Administrative error reporting by email.
+* Development and production configuration profiles.
+
+## Technology Stack
+
+* Java 21
+* Spring Boot 3.5
+* Spring Data JPA
+* Hibernate
+* Thymeleaf
+* Spring Mail
+* H2 for development
+* JUnit 5
+* Mockito
+* Maven
+
+## Application Flow
 
 ```text
-                    ┌─────────────────┐
-                    │ RenovacionService│
-                    └────────┬────────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │   TokenService  │
-                    └────────┬────────┘
-                             │
-                ┌────────────┴────────────┐
-                ▼                         ▼
-         TokenCliente              TokenDominio
-                │                         │
-                └────────────┬────────────┘
-                             ▼
-                    RenovacionController
-                             │
-                             ▼
-                        Thymeleaf
-```
-
-# 1. Cerrar el flujo de renovación
-
-Ahora:
-
-```text
-RenovacionController
-       ↓
-TokenService
-       ↓
-TokenDominio
-       ↓
-CONFIRMADO / RECHAZADO
-```
-
-Pero todavía hay una diferencia entre:
-
-> "el cliente ha confirmado que quiere renovar"
-
-y
-
-> "el dominio se ha renovado realmente"
-
-Actualmente `procesarConfirmacion()` marca los `TokenDominio` como confirmados/rechazados y marca el token como usado.
-
-Eso **no debería confundirse todavía con realizar la renovación/facturación**.
-
-**establecer claramente esta separación:**
-
-```text
-CLIENTE
-   ↓
-CONFIRMA
-   ↓
-TokenDominio
-   ↓
-CONFIRMADO
-   ↓
-PROCESO INTERNO
-   ↓
-RENOVACIÓN
-   ↓
-FACTURACIÓN
-```
-
-
----
-
-# 3. Después `RenovacionService`
-
-
-Actualmente hace:
-
-```text
-buscar dominios próximos a caducar
-        ↓
-calcular umbral
-        ↓
-cambiar estado
-        ↓
-generar TokenCliente
-```
-
-pero termina aquí:
-
-```java
-TokenCliente token = tokenService.generarToken(dominio);
-```
-
-y después
-
-```java
-//TODO:EmailService
-```
-
-Siguiente paso: completar TODO de renovacionService
-
----
-
-# 4. Integrar EmailService
-
-El flujo debería quedar:
-
-```text
+Scheduled task
+      │
+      ▼
+RenovacionScheduler
+      │
+      ▼
 RenovacionService
-       │
-       ├── encuentra dominio
-       │
-       ├── calcula umbral
-       │
-       ├── genera TokenCliente
-       │
-       └── EmailService
-                │
-                ▼
-        email al cliente
-                │
-                ▼
-       enlace de renovación
+      │
+      ├── Find domains approaching expiration
+      ├── Group domains by client
+      ├── Generate confirmation token
+      ├── Build confirmation URL
+      └── Send renewal email
+                    │
+                    ▼
+          Client confirmation
+                    │
+                    ▼
+          RenovacionController
+                    │
+                    ├── Validate token
+                    ├── Validate domains
+                    └── Process confirmation
 ```
 
-decision!
+## Renewal Process
 
-## Un token por dominio o un token por cliente
+1. The scheduler executes the renewal process according to the configured cron expression.
+2. Domains approaching their expiration date are retrieved.
+3. Domains are grouped by client.
+4. A confirmation token is generated for each client.
+5. The client receives an email containing a confirmation link.
+6. The client accesses the renewal form.
+7. The token is validated.
+8. The client selects the domains to renew or rejects all domains.
+9. The server validates that the selected domains belong to the token's client.
+10. The token is marked as used.
+11. The selected domains are processed and their status is updated.
 
-se mantendría
+## Configuration
 
-**1 TokenCliente → N TokenDominio**
-
-Es decir:
+The application uses Spring Boot profiles:
 
 ```text
-Cliente Ana
-    │
-    └── TokenCliente ABC123
-            │
-            ├── dominio1.es
-            ├── dominio2.com
-            └── dominio3.net
+application.properties
+application-dev.properties
+application-prod.properties
 ```
 
----
+### Development
 
-# Timeline actualizado
-
-
-## 🟢 BLOQUE 1 — Renovación cliente
-
-### #17 — RenovacionController
-
-Terminar:
-
-* `RenovacionControllerTest`
-* tests de todos los estados
-* test de POST
-* test sin dominios
-* verificar `procesarConfirmacion()`
-
-Después:
-
-**PR → master**
-
----
-
-## 🟢 BLOQUE 2 — Token
-
-### Semana 1-2
-
-Terminar la batería de:
+Activate the development profile with:
 
 ```text
-TokenServiceTest
-TokenServiceIntegrationTest
+SPRING_PROFILES_ACTIVE=dev
 ```
 
-Casos mínimos:
+The development environment uses:
+
+* H2 in-memory database
+* H2 console
+* Mailpit for local email testing
+* Local renewal URL
+
+H2 console:
 
 ```text
-generar token
-    ✓ genera UUID
-    ✓ fecha creación
-    ✓ fecha expiración
-    ✓ usado = false
-
-validar token
-    ✓ válido
-    ✓ inexistente
-    ✓ expirado
-    ✓ usado
-
-procesarConfirmacion
-    ✓ todos confirmados
-    ✓ algunos confirmados
-    ✓ ninguno confirmado
-    ✓ token usado
+http://localhost:8080/h2-console
 ```
 
----
-
-# 🟢 BLOQUE 3 — Emails
-
-
-
-Aquí atacar la integración pendiente de `RenovacionService`.
-
-Actualmente:
+Mailpit:
 
 ```text
-RenovacionService
-       ↓
-TokenService
-       ↓
-Token generado
+http://localhost:8025
 ```
 
-Queremos:
+### Production
+
+Activate the production profile with:
 
 ```text
-RenovacionService
-       ↓
-TokenService
-       ↓
-Token generado
-       ↓
-EmailService
-       ↓
-email
+SPRING_PROFILES_ACTIVE=prod
 ```
 
-Y crear tests para esto.
+Production database and mail configuration is provided through environment variables.
 
----
-
-# 🟢 BLOQUE 4 — Scheduler
-
-
-
-Una vez que el envío manual funciona:
+The main configuration variables include:
 
 ```text
-@Scheduled
-    ↓
-RenovacionService.procesarAvisos()
+DB_URL
+DB_USERNAME
+DB_PASSWORD
+
+MAIL_HOST
+MAIL_PORT
+MAIL_USERNAME
+MAIL_PASSWORD
+
+APP_URL_DOMINIO
+APP_EMAIL_ADMIN
+
+RENOVACION_SCHEDULER_CRON
 ```
 
-Aquí es donde el proyecto empieza a funcionar realmente como aplicación de producción.
+Sensitive credentials should not be committed to the repository.
 
-El proceso completo será:
+## Scheduler
+
+The renewal process is executed using Spring Scheduler.
+
+The default schedule is:
 
 ```text
-             SCHEDULER
-                 ↓
-       RenovacionService
-                 ↓
-        ¿Qué dominios?
-                 ↓
-          ¿Qué umbral?
-                 ↓
-          generar token
-                 ↓
-           enviar email
+0 0 9 * * *
 ```
 
----
-
-# 🟠 BLOQUE 5 — Respuesta del cliente
-
-
-
+The schedule can be overridden using:
 
 ```text
-Email
-  ↓
-Cliente abre enlace
-  ↓
-RenovacionController
-  ↓
-TokenService.validarToken()
-  ↓
-Formulario
-  ↓
-Cliente selecciona
-  ↓
-POST
-  ↓
-procesarConfirmacion()
+RENOVACION_SCHEDULER_CRON
 ```
 
-Y aquí implementar la **issue relacionada con los avisos después de renovar/cancelar**.
+For local testing, a more frequent cron expression can be used.
 
-La idea sería:
+## Testing
+
+The project contains unit and integration tests covering the main application components.
+
+Run the complete test suite with:
+
+```bash
+mvn clean test
+```
+
+The test suite covers, among other cases:
+
+* Renewal processing.
+* Renewal thresholds.
+* Expired domains.
+* Previously notified domains.
+* Token generation and validation.
+* Used and expired tokens.
+* Email functionality.
+* Controller behaviour.
+* Confirmation processing.
+* Scheduler execution.
+* Client/domain isolation.
+* End-to-end renewal workflow.
+
+## Project Structure
 
 ```text
-CONFIRMADO
-    ↓
-registrar renovación
-
-RECHAZADO
-    ↓
-registrar cancelación
+src/
+├── main/
+│   ├── java/com/dominiossolunet/
+│   │   ├── config/
+│   │   ├── controller/
+│   │   ├── dto/
+│   │   ├── model/
+│   │   ├── repository/
+│   │   ├── scheduler/
+│   │   ├── service/
+│   │   └── utils/
+│   │
+│   └── resources/
+│       ├── templates/
+│       ├── application.properties
+│       ├── application-dev.properties
+│       └── application-prod.properties
+│
+└── test/
+    └── java/com/dominiossolunet/
+        ├── controller/
+        ├── service/
+        ├── scheduler/
+        └── utils/
 ```
 
----
+## Version
 
-# 🟠 BLOQUE 6 — Facturación
+Current release:
 
+**1.0.0**
 
-Ahora sí.
+See [CHANGELOG.md](CHANGELOG.md) for the release history.
 
+## License
 
-```text
-qué cliente
-qué dominio
-qué ha decidido
-cuándo
-qué token
-```
-
-Entonces tiene sentido trabajar con:
-
-```text
-Facturacion
-```
-
-y su historial.
-
-El flujo:
-
-```text
-TokenDominio
-     │
-     ├── CONFIRMADO
-     │       ↓
-     │   Facturación
-     │
-     └── RECHAZADO
-             ↓
-        No facturar
-```
-
----
-
-# 🟡 BLOQUE 7 — Logging
-
-
-Después:
-
-**#14 Logger**
-
-
-```text
-INFO
-WARN
-ERROR
-```
-
-Por ejemplo:
-
-```text
-INFO  Token generado
-INFO  Aviso enviado
-INFO  Cliente ha confirmado dominio
-INFO  Cliente ha rechazado dominio
-WARN  Token expirado
-WARN  Token ya utilizado
-ERROR Error enviando email
-ERROR Error procesando facturación
-```
-
----
-
-# 🟡 BLOQUE 8 — Seguridad
-
-
-Antes de producción:
-
-* secretos fuera de Git
-* configuración por entorno
-* SMTP
-* tokens
-* validación de parámetros
-* protección de endpoints
-* logs sin información sensible
-* manejo de excepciones
-
- **obligatorio antes del despliegue**.
-
----
-
-# 🟢 BLOQUE 9 — Testing final
-
-### Semana 8
-
-Prueba de integración del proceso
-
-```text
-BD
- ↓
-RenovacionService
- ↓
-TokenService
- ↓
-EmailService
- ↓
-Controller
- ↓
-POST
- ↓
-TokenDominio
- ↓
-Facturacion
-```
-
-Y algunos escenarios completos:
-
-### Caso 1
-
-```text
-Dominio caduca en 30 días
-→ email
-→ cliente acepta
-→ CONFIRMADO
-→ facturación
-```
-
-### Caso 2
-
-```text
-Dominio caduca en 30 días
-→ email
-→ cliente rechaza
-→ RECHAZADO
-→ no facturar
-```
-
-### Caso 3
-
-```text
-Token expirado
-→ no permite operación
-```
-
-### Caso 4
-
-```text
-Token usado
-→ no permite operación
-```
-
-### Caso 5
-
-```text
-Dominio ya avisado en ese umbral
-→ no vuelve a enviar
-```
-
----
-
-### Pasos próximos:
-
-Yo haría exactamente esto ahora:
-
-**1. Terminar `RenovacionControllerTest`**
-**2. Revisar `TokenServiceTest` y `TokenServiceIntegrationTest` contra la implementación actual**
-**3. Ejecutar todos los tests**
-**4. Corregir lo que falle**
-**5. Hacer el PR de `17-renovacioncontroller` a `master`**
-**6. Pasar a `RenovacionService + EmailService`**
-
-Y especialmente revisaría antes de hacer el PR una cosa del código actual: `generarToken(Dominio dominio)` recibe un `Dominio`, pero en la implementación que veo **no está asociando el token generado con ese dominio/cliente**; simplemente crea el `TokenCliente` y lo guarda.
-
-Eso es potencialmente importante para el siguiente bloque y **yo lo solucionaría antes de integrar el email**, porque de lo contrario puedes acabar generando tokens que luego no tienen correctamente asociados sus `TokenDominio`.
+This project is intended as an educational and development project.
