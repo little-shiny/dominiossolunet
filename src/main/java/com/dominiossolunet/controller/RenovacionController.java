@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +23,8 @@ import java.util.List;
 public class RenovacionController {
 
     private final TokenService tokenService;
+
+    private final Logger logger = LoggerFactory.getLogger(RenovacionController.class);
 
     public RenovacionController(TokenService tokenService1) {
         this.tokenService = tokenService1;
@@ -36,11 +40,17 @@ public class RenovacionController {
     @GetMapping
     public String mostrarFormulario(@RequestParam String token, Model model) {
 
+        logger.info("Token recibido: [{}]", token);
+
         ResultadoValidacionRec resultadoValidacionRec = tokenService.validarToken(token);
 
-        // Se añaden los datos en el model
-        model.addAttribute("resultado", resultadoValidacionRec.resultado());
+        logger.info("Resultado token: [{}]", resultadoValidacionRec.resultado());
 
+        System.out.println("RESULTADO TOKEN: " + resultadoValidacionRec.resultado());
+
+
+        // Se añaden los datos en el model
+        model.addAttribute("resultado", resultadoValidacionRec.resultado().name());
         // Se rellenan los campos de la vista en función del resultado
         switch (resultadoValidacionRec.resultado()) {
             case VALIDO -> {

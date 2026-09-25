@@ -15,6 +15,6 @@ public class RenovacionUrlBuilder {
     }
 
     public String construirUrlConfirmacion(String token) {
-        return urlBase + urlRenovacion + token;
+        return urlBase + urlRenovacion + "?token=" + token;
     }
 }
