@@ -4,9 +4,12 @@ import com.dominiossolunet.dto.ErrorEnvioEmail;
 import com.dominiossolunet.dto.ResultadoEnvioEmail;
 import com.dominiossolunet.model.Cliente;
 import com.dominiossolunet.model.Dominio;
+import com.dominiossolunet.model.HistorialDominio;
 import com.dominiossolunet.model.TokenCliente;
 import com.dominiossolunet.model.enums.Estado;
+import com.dominiossolunet.model.enums.TipoEventoDominio;
 import com.dominiossolunet.repository.DominioRepository;
+import com.dominiossolunet.repository.HistorialDominioRepository;
 import com.dominiossolunet.utils.RenovacionUrlBuilder;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -16,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,17 +37,22 @@ public class RenovacionService {
     private final DominioRepository dominioRepository; // Es final porque va en el constructor
     private final TokenService tokenService;  //idem
     private final EmailService emailService;
+
+    private final HistorialDominioRepository historialDominioRepository;
+
+
     private final RenovacionUrlBuilder renovacionUrlBuilder;
     @Value("${renovacion.umbrales}")
     private List<Integer> umbrales;
     private int umbralMaximo;
 
     //Constructor
-    public RenovacionService(DominioRepository dominioRepository, TokenService tokenService, EmailService emailService, RenovacionUrlBuilder renovacionUrlBuilder) {
+    public RenovacionService(DominioRepository dominioRepository, TokenService tokenService, EmailService emailService, RenovacionUrlBuilder renovacionUrlBuilder, HistorialDominioRepository historialDominioRepository) {
         this.dominioRepository = dominioRepository;
         this.tokenService = tokenService;
         this.emailService = emailService;
         this.renovacionUrlBuilder = renovacionUrlBuilder;
+        this.historialDominioRepository = historialDominioRepository;
     }
 
     /**
@@ -80,6 +89,7 @@ public class RenovacionService {
         List<ErrorEnvioEmail> erroresEnvio = new ArrayList<>();
 
         LocalDate hoy = LocalDate.now();
+        LocalDateTime ahora = LocalDateTime.now();
 
         List<Estado> estadosValidos = List.of(Estado.ACTIVO, Estado.AVISO_ENVIADO);
 
@@ -117,7 +127,8 @@ public class RenovacionService {
             ResultadoEnvioEmail resultado = emailService.enviarAvisoRenovacion(cliente, dominios, urlRenovacion);
 
             if (resultado.isEnviado()) {
-                marcarComoAvisado(dominios, hoy);
+                marcarComoAvisado(dominios, hoy, ahora);
+                //todo historial
             } else {
                 erroresEnvio.add(new ErrorEnvioEmail(cliente, dominios, resultado.getMensajeError()));
             }
@@ -171,7 +182,11 @@ public class RenovacionService {
      * Recorre la lista de dominios por parametro , guarda su umbral, cambia el estado a aviso como enviado y guarda
      *
      */
-    private void marcarComoAvisado(List<Dominio> dominios, LocalDate fechaActual) {
+    private void marcarComoAvisado(
+            List<Dominio> dominios,
+            LocalDate fechaActual,
+            LocalDateTime fechaHoraActual) {
+
         for (Dominio dominio : dominios) {
 
             Integer umbral = determinarUmbral(dominio, fechaActual);
@@ -180,6 +195,14 @@ public class RenovacionService {
             dominio.setUltimoUmbralAvisado(umbral);
             dominio.setUltimoAviso(fechaActual);
 
+            HistorialDominio historial = new HistorialDominio();
+            historial.setDominio(dominio);
+            historial.setTipoEvento(
+                    TipoEventoDominio.AVISO_RENOVACION_ENVIADO
+            );
+            historial.setFecha(fechaHoraActual);
+
+            historialDominioRepository.save(historial);
         }
     }
 }
