@@ -1,14 +1,14 @@
 package com.dominiossolunet.service;
 
 import com.dominiossolunet.dto.ResultadoValidacionRec;
-import com.dominiossolunet.model.Cliente;
-import com.dominiossolunet.model.Dominio;
-import com.dominiossolunet.model.TokenCliente;
-import com.dominiossolunet.model.TokenDominio;
+import com.dominiossolunet.model.*;
+import com.dominiossolunet.model.enums.Estado;
 import com.dominiossolunet.model.enums.EstadoAvisoRenovacion;
 import com.dominiossolunet.model.enums.ResultadoValidacion;
+import com.dominiossolunet.model.enums.TipoEventoDominio;
 import com.dominiossolunet.repository.TokenClienteRepository;
 import com.dominiossolunet.repository.TokenDominioRepository;
+import com.dominiossolunet.repository.HistorialDominioRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -37,6 +37,9 @@ class TokenServiceTest {
 
     @Mock
     private TokenDominioRepository tokenDominioRepository;
+
+    @Mock
+    private HistorialDominioRepository historialDominioRepository;
 
     @InjectMocks
     private TokenService tokenService;
@@ -1033,4 +1036,131 @@ class TokenServiceTest {
                 .findByToken("abc123");
     }
 
+    @Test
+    void procesarConfirmacion_todosConfirmados_registraHistorial() {
+
+        // Arrange
+
+        Cliente cliente = new Cliente();
+        cliente.setNombre("Ana");
+        cliente.setEmail("ana@ana.com");
+
+        Dominio dominio1 = new Dominio();
+        dominio1.setNombreDominio("ana.com");
+        dominio1.setEstado(Estado.AVISO_ENVIADO);
+        dominio1.setCliente(cliente);
+
+        Dominio dominio2 = new Dominio();
+        dominio2.setNombreDominio("ana.es");
+        dominio2.setEstado(Estado.AVISO_ENVIADO);
+        dominio2.setCliente(cliente);
+
+        TokenCliente tokenCliente = new TokenCliente();
+        tokenCliente.setToken("token123");
+        tokenCliente.setCliente(cliente);
+
+        TokenDominio tokenDominio1 = new TokenDominio();
+        tokenDominio1.setTokenCliente(tokenCliente);
+        tokenDominio1.setDominio(dominio1);
+
+        TokenDominio tokenDominio2 = new TokenDominio();
+        tokenDominio2.setTokenCliente(tokenCliente);
+        tokenDominio2.setDominio(dominio2);
+
+        List<TokenDominio> tokenDominios = List.of(
+                tokenDominio1,
+                tokenDominio2
+        );
+
+        when(tokenDominioRepository.findByTokenCliente(tokenCliente))
+                .thenReturn(tokenDominios);
+
+        when(tokenClienteRepository.findByToken("token123"))
+                .thenReturn(Optional.of(tokenCliente));
+
+        List<Integer> idsDominiosMarcados = List.of(
+                dominio1.getId(),
+                dominio2.getId()
+        );
+
+        // Act
+
+        tokenService.procesarConfirmacion(
+                tokenCliente,
+                idsDominiosMarcados
+        );
+
+        // Assert
+
+        assertThat(tokenDominio1.getEstadoAvisoRenovacion())
+                .isEqualTo(EstadoAvisoRenovacion.CONFIRMADO);
+
+        assertThat(tokenDominio2.getEstadoAvisoRenovacion())
+                .isEqualTo(EstadoAvisoRenovacion.CONFIRMADO);
+
+        assertThat(tokenDominio1.getFechaInteraccionCliente())
+                .isNotNull();
+
+        assertThat(tokenDominio2.getFechaInteraccionCliente())
+                .isNotNull();
+
+        // Comprobamos que se ha creado un historial por cada dominio
+
+        ArgumentCaptor<HistorialDominio> captor =
+                ArgumentCaptor.forClass(HistorialDominio.class);
+
+        verify(historialDominioRepository, times(2))
+                .save(captor.capture());
+
+        List<HistorialDominio> historiales =
+                captor.getAllValues();
+
+        assertThat(historiales)
+                .hasSize(2);
+
+        // Historial del primer dominio
+
+        HistorialDominio historial1 = historiales.get(0);
+
+        assertThat(historial1.getDominio())
+                .isSameAs(dominio1);
+
+        assertThat(historial1.getTipoEvento())
+                .isEqualTo(
+                        TipoEventoDominio.CLIENTE_ACEPTA_RENOVACION
+                );
+
+        assertThat(historial1.getFecha())
+                .isNotNull();
+
+        // Historial del segundo dominio
+
+        HistorialDominio historial2 = historiales.get(1);
+
+        assertThat(historial2.getDominio())
+                .isSameAs(dominio2);
+
+        assertThat(historial2.getTipoEvento())
+                .isEqualTo(
+                        TipoEventoDominio.CLIENTE_ACEPTA_RENOVACION
+                );
+
+        assertThat(historial2.getFecha())
+                .isNotNull();
+
+        // El token debe quedar marcado como usado
+
+        assertThat(tokenCliente.isUsado())
+                .isTrue();
+
+        // Importante:
+        // aceptar la renovación NO significa que el dominio
+        // haya sido renovado realmente.
+
+        assertThat(dominio1.getEstado())
+                .isEqualTo(Estado.AVISO_ENVIADO);
+
+        assertThat(dominio2.getEstado())
+                .isEqualTo(Estado.AVISO_ENVIADO);
+    }
 }
