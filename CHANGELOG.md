@@ -2,53 +2,101 @@
 
 All notable changes to this project are documented in this file.
 
-## [Unreleased] - 2026-09-25
+## [Unreleased]
 
 ### Added
-- Añadido `HistorialDominio` para registrar los eventos relevantes del ciclo de vida de un dominio.
-- Añadido `HistorialDominioRepository` para consultar el historial de cada dominio ordenado por fecha.
-- Añadido el evento `AVISO_RENOVACION_ENVIADO` al proceso automático de avisos.
-- Añadido el registro de eventos de:
-    - `CLIENTE_ACEPTA_RENOVACION`
-    - `CLIENTE_RECHAZA_RENOVACION`
-    - `RENOVACION_REALIZADA`
-    - `FACTURACION_REALIZADA`
-- Añadido registro histórico individual para cada dominio incluido en un aviso de renovación.
-- Añadidos tests para comprobar que los avisos enviados correctamente generan su correspondiente registro en el historial.
-- Añadidos tests para comprobar que un error en el envío del correo no genera un evento de aviso enviado.
+
+* Added a management dashboard for monitoring the domain renewal process.
+* Added client overview and client detail pages.
+* Added domain detail views.
+* Added dashboard metrics for the current domain and renewal status.
+* Added `ClienteResumen` to provide summarized client information for the management interface.
+* Added `DominioGestionDto` for transferring domain management data to the web interface.
+* Added filtering capabilities for domain management.
+* Added management views using Thymeleaf.
+* Added test coverage for the new dashboard, client management and domain management functionality.
+* Added development data in `data.sql` for testing the dashboard and management views.
 
 ### Changed
-- Modificado `RenovacionService` para guardar un `HistorialDominio` cuando el email de renovación se envía correctamente.
-- El registro `AVISO_RENOVACION_ENVIADO` se realiza únicamente después de confirmar el envío correcto del correo.
-- Manteniendo la lógica existente, los dominios se marcan como `AVISO_ENVIADO` únicamente cuando el envío ha sido satisfactorio.
-- `TokenService.procesarConfirmacion()` registra ahora el resultado de la respuesta del cliente en el historial.
-- Las respuestas del cliente se registran como:
-    - `CLIENTE_ACEPTA_RENOVACION`
-    - `CLIENTE_RECHAZA_RENOVACION`
-- La renovación realizada por el gestor se registra mediante `RENOVACION_REALIZADA`.
-- Se mantiene separado el estado operativo del dominio de la respuesta del cliente: aceptar una renovación no marca directamente el dominio como `ACTIVO`.
+
+* Extended `GestionDominioController` to support dashboard and domain management views.
+* Extended `GestionDominioService` with the operations required by the management dashboard.
+* Added `ClienteController` to handle client listing and client detail views.
+* Added `ClienteService` to provide client-related management operations.
+* Updated the domain management templates to support the new dashboard workflow.
+* Added client and domain navigation between overview and detail pages.
 
 ### Tests
-- Ampliados los tests de `RenovacionService` para comprobar la creación del historial.
-- Comprobado que se genera un evento histórico por cada dominio, incluso cuando varios dominios pertenecen al mismo cliente.
-- Comprobado que no se genera historial cuando el email no se puede enviar.
-- Ampliados los tests de `TokenService` para cubrir:
-    - todos los dominios confirmados;
-    - algunos dominios confirmados;
-    - ningún dominio confirmado;
-    - token usado después de procesar la confirmación;
-    - creación del historial correspondiente a cada respuesta.
-- Corregidos los tests de `TokenService` para asignar IDs reales a los dominios y evitar que todos utilizaran el ID `0`.
-- Corregidos los tests para no esperar un `tokenClienteRepository.save()` en `marcarComoUsado()`, ya que la actualización se realiza mediante dirty checking de JPA.
+
+* Added tests for the dashboard metrics service.
+* Added tests for client management functionality.
+* Added tests for client detail and domain detail functionality.
+* Updated `GestionDominioService` tests for the new management operations.
+* Updated controller tests for the dashboard and domain management views.
+
+## [1.1.0] - 2026-09-27
+
+### Added
+
+* Added `HistorialDominio` to record relevant events throughout the lifecycle of a domain.
+* Added `HistorialDominioRepository` to query the history of each domain ordered by date.
+* Added the `AVISO_RENOVACION_ENVIADO` event to the automated renewal notification process.
+* Added history events for:
+
+  * `CLIENTE_ACEPTA_RENOVACION`
+  * `CLIENTE_RECHAZA_RENOVACION`
+  * `RENOVACION_REALIZADA`
+  * `FACTURACION_REALIZADA`
+* Added individual history tracking for each domain included in a renewal notification.
+* Added support for recording the effective renewal of a domain independently from the client's response.
+* Added separation between domain renewal and billing, allowing both operations to be managed independently.
+* Added tests to verify that successfully sent renewal notifications create the corresponding history entries.
+* Added tests to verify that email delivery failures do not create an `AVISO_RENOVACION_ENVIADO` event.
+
+### Changed
+
+* Updated `RenovacionService` to save a `HistorialDominio` entry when a renewal email is successfully sent.
+* The `AVISO_RENOVACION_ENVIADO` event is now recorded only after successful email delivery has been confirmed.
+* Domains continue to be marked as `AVISO_ENVIADO` only when the email is successfully sent.
+* Updated `TokenService.procesarConfirmacion()` to record the client's response in the domain history.
+* Client responses are recorded as:
+
+  * `CLIENTE_ACEPTA_RENOVACION`
+  * `CLIENTE_RECHAZA_RENOVACION`
+* Domain renewals performed by the manager are recorded through the `RENOVACION_REALIZADA` event.
+* The operational state of a domain remains independent from the client's renewal response.
+* Accepting a renewal no longer directly changes the domain's operational state to `ACTIVO`.
+* Updated `GestionDominioService` and related domain management logic to work with the new renewal state model.
+* Refactored `ErrorEnvioEmail` and `ResultadoEnvioEmail` into records.
+
+### Tests
+
+* Expanded `RenovacionService` tests to verify domain history creation.
+* Verified that one history event is created for each domain, even when multiple domains belong to the same client.
+* Verified that no `AVISO_RENOVACION_ENVIADO` history entry is created when an email cannot be sent.
+* Expanded `TokenService` tests to cover:
+
+  * all domains being accepted;
+  * some domains being accepted;
+  * no domains being accepted;
+  * token being marked as used after confirmation processing;
+  * history creation for each client response.
+* Added and updated integration tests covering domain history and the new renewal state model.
+* Corrected `TokenService` tests to assign real IDs to domains instead of using `0` for all test domains.
+* Updated tests to avoid expecting `tokenClienteRepository.save()` in `marcarComoUsado()`, as the update is handled through JPA dirty checking.
+* Cleaned up duplicated and outdated tests after the service implementation changes.
 
 ### Refactoring
-- Limpiados y reorganizados los tests de `TokenService`.
-- Eliminada duplicidad en los tests de `procesarConfirmacion()`.
-- Separadas las responsabilidades entre:
-    - respuesta del cliente;
-    - renovación real del dominio;
-    - facturación;
-    - historial de eventos.
+
+* Separated the responsibilities of:
+
+  * client response;
+  * actual domain renewal;
+  * billing;
+  * domain event history.
+* Cleaned up and reorganized `TokenService` tests.
+* Removed duplicated tests for `procesarConfirmacion()`.
+* Refactored affected services and repositories to support the new domain state and history model.
 
 ## [1.0.0] - 2026-09-25
 
