@@ -1,6 +1,7 @@
 package com.dominiossolunet.model;
 
 import com.dominiossolunet.model.enums.Estado;
+import com.dominiossolunet.model.enums.EstadoRenovacion;
 import com.dominiossolunet.model.enums.Registrador;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -23,6 +24,8 @@ public class Dominio {
     @NotNull
     @Enumerated(EnumType.STRING)
     private Estado estado;
+
+    private EstadoRenovacion estadoRenovacion;
 
     private LocalDate fechaExpiracion;
 
