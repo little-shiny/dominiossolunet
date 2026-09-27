@@ -80,18 +80,18 @@ public class RenovacionService {
 
     /**
      * Procesa los avisos de renovación de los dominios próximos a expirar.
-     * <p>
+     *
      * El proceso:
      * 1. Busca los dominios dentro del mayor umbral configurado.
      * 2. Ignora los dominios ya expirados.
-     * 3. Determina el umbral que corresponde a cada dominio.
+     * 3. Determina el umbral correspondiente a cada dominio.
      * 4. Evita volver a procesar un dominio para el mismo umbral.
-     * 5. Actualiza el estado y la información del último aviso.
-     * 6. Agrupa los dominios por cliente.
-     * 7. Genera un único TokenCliente por cliente.
-     * <p>
-     * El envío del correo se realizará posteriormente mediante EmailService.
-     *
+     * 5. Agrupa los dominios por cliente.
+     * 6. Genera un único TokenCliente por cliente.
+     * 7. Envía el aviso de renovación al cliente.
+     * 8. Si el envío es correcto, actualiza el estado del dominio
+     *    y registra el evento en el historial.
+     * 9. Informa al administrador de los posibles errores de envío.
      */
 
     @Transactional
@@ -139,9 +139,24 @@ public class RenovacionService {
             ResultadoEnvioEmail resultado = emailService.enviarAvisoRenovacion(cliente, dominios, urlRenovacion);
 
             if (resultado.isEnviado()) {
+
                 marcarComoAvisado(dominios, hoy, ahora);
+
             } else {
-                erroresEnvio.add(new ErrorEnvioEmail(cliente, dominios, resultado.getMensajeError()));
+
+                logger.error(
+                        "No se pudo enviar el aviso de renovación al cliente {}: {}",
+                        cliente.getEmail(),
+                        resultado.getMensajeError()
+                );
+
+                erroresEnvio.add(
+                        new ErrorEnvioEmail(
+                                cliente,
+                                dominios,
+                                resultado.getMensajeError()
+                        )
+                );
             }
         }
 
