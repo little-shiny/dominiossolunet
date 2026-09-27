@@ -19,12 +19,12 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Transactional(readOnly=true)
 public class GestionDominioService {
 
     private final DominioRepository dominioRepository;
     private final HistorialDominioRepository historialDominioRepository;
     private final TokenDominioRepository tokenDominioRepository;
-
     private final FacturacionRepository facturacionRepository;
 
     public GestionDominioService(DominioRepository dominioRepository, HistorialDominioRepository historialDominioRepository, TokenDominioRepository tokenDominioRepository, FacturacionRepository facturacionRepository) {

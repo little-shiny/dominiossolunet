@@ -1,7 +1,9 @@
 package com.dominiossolunet.dto;
 
 import com.dominiossolunet.model.Cliente;
+import lombok.Getter;
 
+@Getter
 public class ClienteResumen {
 
     private final Cliente cliente;
@@ -27,27 +29,4 @@ public class ClienteResumen {
         this.pendientesFacturacion = pendientesFacturacion;
     }
 
-    public Cliente getCliente() {
-        return cliente;
-    }
-
-    public long getTotalDominios() {
-        return totalDominios;
-    }
-
-    public long getPendientesRenovacion() {
-        return pendientesRenovacion;
-    }
-
-    public long getRenovados() {
-        return renovados;
-    }
-
-    public long getRechazados() {
-        return rechazados;
-    }
-
-    public long getPendientesFacturacion() {
-        return pendientesFacturacion;
-    }
 }

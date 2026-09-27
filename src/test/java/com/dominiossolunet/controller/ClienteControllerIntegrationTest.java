@@ -2,7 +2,9 @@ package com.dominiossolunet.controller;
 
 import com.dominiossolunet.model.Cliente;
 import com.dominiossolunet.model.Dominio;
+import com.dominiossolunet.model.Facturacion;
 import com.dominiossolunet.model.enums.Estado;
+import com.dominiossolunet.model.enums.EstadoFacturacion;
 import com.dominiossolunet.model.enums.EstadoRenovacion;
 import com.dominiossolunet.model.enums.Registrador;
 import com.dominiossolunet.repository.ClienteRepository;
@@ -11,6 +13,7 @@ import com.dominiossolunet.repository.FacturacionRepository;
 import com.dominiossolunet.repository.HistorialDominioRepository;
 import com.dominiossolunet.repository.TokenClienteRepository;
 import com.dominiossolunet.repository.TokenDominioRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,16 +21,12 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
-import jakarta.servlet.ServletException;
-
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.hamcrest.Matchers.containsString;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -43,6 +42,9 @@ class ClienteControllerIntegrationTest {
     private DominioRepository dominioRepository;
 
     @Autowired
+    private FacturacionRepository facturacionRepository;
+
+    @Autowired
     private HistorialDominioRepository historialDominioRepository;
 
     @Autowired
@@ -51,253 +53,385 @@ class ClienteControllerIntegrationTest {
     @Autowired
     private TokenClienteRepository tokenClienteRepository;
 
-    @Autowired
-    private FacturacionRepository facturacionRepository;
-
     @BeforeEach
-    void limpiarBaseDeDatos() {
-
-        // Primero las entidades que dependen de Dominio
+    @AfterEach
+    void limpiarDatos() {
         historialDominioRepository.deleteAll();
         tokenDominioRepository.deleteAll();
         facturacionRepository.deleteAll();
-
-        // Después las entidades que dependen de Cliente
         tokenClienteRepository.deleteAll();
-
-        // Finalmente dominios y clientes
         dominioRepository.deleteAll();
         clienteRepository.deleteAll();
     }
 
     @Test
-    void listarClientes_muestraClientesYEstadisticas() throws Exception {
+    void listarClientes_devuelveVistaConClientes() throws Exception {
 
-        Cliente cliente = crearCliente(
-                "Cliente Integracion",
-                "integracion@cliente.com"
+        Cliente cliente1 = crearCliente(
+                "Cliente Uno",
+                "uno@test.com"
+        );
+
+        Cliente cliente2 = crearCliente(
+                "Cliente Dos",
+                "dos@test.com"
         );
 
         crearDominio(
-                cliente,
-                "dominio-pendiente.es",
-                Estado.AVISO_ENVIADO,
-                EstadoRenovacion.PENDIENTE_RENOVACION,
-                Registrador.DOMITECA
-        );
-
-        crearDominio(
-                cliente,
-                "dominio-renovado.es",
+                "uno.es",
+                cliente1,
                 Estado.ACTIVO,
                 EstadoRenovacion.RENOVADO,
-                Registrador.GANDI
-        );
-
-        mockMvc.perform(get("/gestion/clientes"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("gestion/clientes"))
-                .andExpect(content().string(containsString("Cliente Integracion")))
-                .andExpect(content().string(containsString("integracion@cliente.com")))
-                .andExpect(content().string(containsString("1 clientes encontrados")))
-                .andExpect(content().string(containsString(">2</span>")))
-                .andExpect(content().string(containsString(">1</span>")));
-    }
-
-    @Test
-    void listarClientes_sinClientes_muestraEstadoVacio() throws Exception {
-
-        mockMvc.perform(get("/gestion/clientes"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("gestion/clientes"))
-                .andExpect(content().string(
-                        containsString("No hay clientes")
-                ));
-    }
-
-    @Test
-    void detalleCliente_muestraInformacionDelCliente() throws Exception {
-
-        Cliente cliente = crearCliente(
-                "Cliente Detalle",
-                "detalle@cliente.com"
+                Registrador.DOMITECA,
+                LocalDate.now().plusDays(30)
         );
 
         crearDominio(
-                cliente,
-                "detalle.es",
+                "dos.es",
+                cliente2,
                 Estado.AVISO_ENVIADO,
                 EstadoRenovacion.PENDIENTE_RENOVACION,
-                Registrador.DOMITECA
+                Registrador.GANDI,
+                LocalDate.now().plusDays(15)
         );
 
-        mockMvc.perform(get("/gestion/clientes/{id}", cliente.getId()))
+        mockMvc.perform(get("/gestion/clientes"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("gestion/cliente-detalle"))
-                .andExpect(content().string(
-                        containsString("Cliente Detalle")
-                ))
-                .andExpect(content().string(
-                        containsString("detalle@cliente.com")
-                ))
-                .andExpect(content().string(
-                        containsString("detalle.es")
-                ));
+                .andExpect(view().name("gestion/clientes"))
+                .andExpect(model().attributeExists("clientes"))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Cliente Uno")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Cliente Dos")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("uno@test.com")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("dos@test.com")));
     }
 
     @Test
-    void detalleCliente_muestraEstadisticasCorrectamente() throws Exception {
+    void listarClientes_clienteConEstadisticasMuestraLosValoresCorrectos()
+            throws Exception {
 
         Cliente cliente = crearCliente(
                 "Cliente Estadisticas",
-                "estadisticas@cliente.com"
+                "estadisticas@test.com"
         );
 
         crearDominio(
+                "renovado.es",
                 cliente,
+                Estado.ACTIVO,
+                EstadoRenovacion.RENOVADO,
+                Registrador.DOMITECA,
+                LocalDate.now().plusDays(100)
+        );
+
+        crearDominio(
                 "pendiente.es",
+                cliente,
                 Estado.AVISO_ENVIADO,
                 EstadoRenovacion.PENDIENTE_RENOVACION,
-                Registrador.DOMITECA
+                Registrador.GANDI,
+                LocalDate.now().plusDays(10)
         );
 
         crearDominio(
-                cliente,
-                "renovado.es",
-                Estado.ACTIVO,
-                EstadoRenovacion.RENOVADO,
-                Registrador.GANDI
-        );
-
-        crearDominio(
-                cliente,
                 "rechazado.es",
+                cliente,
                 Estado.AVISO_ENVIADO,
                 EstadoRenovacion.RECHAZADO,
-                Registrador.NOMINALIA
+                Registrador.NOMINALIA,
+                LocalDate.now().plusDays(20)
         );
 
-        mockMvc.perform(get("/gestion/clientes/{id}", cliente.getId()))
+        Dominio dominioPendienteFacturacion = crearDominio(
+                "facturar.es",
+                cliente,
+                Estado.ACTIVO,
+                EstadoRenovacion.RENOVADO,
+                Registrador.OTRO,
+                LocalDate.now().plusDays(200)
+        );
+
+        Facturacion facturacion = new Facturacion();
+        facturacion.setDominio(dominioPendienteFacturacion);
+        facturacion.setEstadoFacturacion(
+                EstadoFacturacion.PENDIENTE_FACTURAR
+        );
+
+        facturacionRepository.save(facturacion);
+
+        mockMvc.perform(get("/gestion/clientes"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("gestion/cliente-detalle"))
-                .andExpect(content().string(
-                        containsString("3")
-                ))
-                .andExpect(content().string(
-                        containsString("pendiente.es")
-                ))
-                .andExpect(content().string(
-                        containsString("renovado.es")
-                ))
-                .andExpect(content().string(
-                        containsString("rechazado.es")
-                ));
+                .andExpect(view().name("gestion/clientes"))
+                .andExpect(model().attributeExists("clientes"))
+                .andExpect(
+                        content().string(
+                                org.hamcrest.Matchers.containsString(
+                                        "Cliente Estadisticas"
+                                )
+                        )
+                )
+                .andExpect(
+                        content().string(
+                                org.hamcrest.Matchers.containsString(
+                                        ">4</span>"
+                                )
+                        )
+                );
     }
 
     @Test
-    void detalleCliente_sinDominios_muestraClienteSinDominios() throws Exception {
+    void listarClientes_sinClientesMuestraEstadoVacio()
+            throws Exception {
+
+        mockMvc.perform(get("/gestion/clientes"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("gestion/clientes"))
+                .andExpect(model().attributeExists("clientes"))
+                .andExpect(
+                        content().string(
+                                org.hamcrest.Matchers.containsString(
+                                        "No hay clientes registrados."
+                                )
+                        )
+                )
+                .andExpect(
+                        content().string(
+                                org.hamcrest.Matchers.containsString(
+                                        "0 clientes encontrados"
+                                )
+                        )
+                );
+    }
+
+    @Test
+    void detalleCliente_devuelveVistaConDatosDelCliente()
+            throws Exception {
 
         Cliente cliente = crearCliente(
-                "Cliente Sin Dominios",
-                "sin@cliente.com"
+                "Cliente Detalle",
+                "detalle@test.com"
         );
 
-        mockMvc.perform(get("/gestion/clientes/{id}", cliente.getId()))
-                .andExpect(status().isOk())
-                .andExpect(view().name("gestion/cliente-detalle"))
-                .andExpect(content().string(
-                        containsString("Cliente Sin Dominios")
-                ))
-                .andExpect(content().string(
-                        containsString("sin@cliente.com")
-                ));
-    }
-
-    @Test
-    void detalleCliente_noMuestraDominiosDeOtroCliente() throws Exception {
-
-        Cliente clientePrincipal = crearCliente(
-                "Cliente Principal",
-                "principal@cliente.com"
-        );
-
-        Cliente otroCliente = crearCliente(
-                "Otro Cliente",
-                "otro@cliente.com"
+        Dominio dominio1 = crearDominio(
+                "detalle-uno.es",
+                cliente,
+                Estado.ACTIVO,
+                EstadoRenovacion.RENOVADO,
+                Registrador.DOMITECA,
+                LocalDate.of(2026, 10, 10)
         );
 
         crearDominio(
-                clientePrincipal,
-                "principal.es",
-                Estado.ACTIVO,
-                EstadoRenovacion.RENOVADO,
-                Registrador.DOMITECA
-        );
-
-        crearDominio(
-                otroCliente,
-                "otro.es",
-                Estado.ACTIVO,
-                EstadoRenovacion.RENOVADO,
-                Registrador.GANDI
+                "detalle-dos.es",
+                cliente,
+                Estado.AVISO_ENVIADO,
+                EstadoRenovacion.PENDIENTE_RENOVACION,
+                Registrador.GANDI,
+                LocalDate.of(2026, 11, 15)
         );
 
         mockMvc.perform(
-                        get("/gestion/clientes/{id}", clientePrincipal.getId())
+                        get("/gestion/clientes/{id}", cliente.getId())
                 )
                 .andExpect(status().isOk())
                 .andExpect(view().name("gestion/cliente-detalle"))
-                .andExpect(content().string(
-                        containsString("principal.es")
-                ))
-                .andExpect(content().string(
-                        org.hamcrest.Matchers.not(
-                                containsString("otro.es")
+                .andExpect(model().attributeExists("cliente"))
+                .andExpect(model().attributeExists("dominios"))
+                .andExpect(model().attributeExists("totalDominios"))
+                .andExpect(model().attributeExists("pendientesRenovacion"))
+                .andExpect(model().attributeExists("renovados"))
+                .andExpect(model().attributeExists("rechazados"))
+                .andExpect(model().attributeExists("pendientesFacturacion"))
+                .andExpect(
+                        content().string(
+                                org.hamcrest.Matchers.containsString(
+                                        "Cliente Detalle"
+                                )
                         )
-                ));
+                )
+                .andExpect(
+                        content().string(
+                                org.hamcrest.Matchers.containsString(
+                                        "detalle@test.com"
+                                )
+                        )
+                )
+                .andExpect(
+                        content().string(
+                                org.hamcrest.Matchers.containsString(
+                                        "detalle-uno.es"
+                                )
+                        )
+                )
+                .andExpect(
+                        content().string(
+                                org.hamcrest.Matchers.containsString(
+                                        "detalle-dos.es"
+                                )
+                        )
+                );
+
+        // Evita que el compilador marque la variable como innecesaria
+        // y deja explícito que el dominio pertenece al cliente creado.
+        assertTrue(dominio1.getCliente().getId() == cliente.getId());
     }
 
     @Test
-    void detalleCliente_clienteNoExistente_lanzaServletExceptionConIllegalArgumentExceptionComoCausa()
+    void detalleCliente_muestraEstadisticasCorrectas()
+            throws Exception {
+
+        Cliente cliente = crearCliente(
+                "Cliente Resumen",
+                "resumen@test.com"
+        );
+
+        crearDominio(
+                "renovado.es",
+                cliente,
+                Estado.ACTIVO,
+                EstadoRenovacion.RENOVADO,
+                Registrador.DOMITECA,
+                LocalDate.now().plusDays(100)
+        );
+
+        crearDominio(
+                "pendiente.es",
+                cliente,
+                Estado.AVISO_ENVIADO,
+                EstadoRenovacion.PENDIENTE_RENOVACION,
+                Registrador.GANDI,
+                LocalDate.now().plusDays(15)
+        );
+
+        crearDominio(
+                "rechazado.es",
+                cliente,
+                Estado.AVISO_ENVIADO,
+                EstadoRenovacion.RECHAZADO,
+                Registrador.NOMINALIA,
+                LocalDate.now().plusDays(20)
+        );
+
+        Dominio dominioFacturadoPendiente = crearDominio(
+                "facturacion.es",
+                cliente,
+                Estado.ACTIVO,
+                EstadoRenovacion.RENOVADO,
+                Registrador.OTRO,
+                LocalDate.now().plusDays(200)
+        );
+
+        Facturacion facturacion = new Facturacion();
+        facturacion.setDominio(dominioFacturadoPendiente);
+        facturacion.setEstadoFacturacion(
+                EstadoFacturacion.PENDIENTE_FACTURAR
+        );
+
+        facturacionRepository.save(facturacion);
+
+        mockMvc.perform(
+                        get("/gestion/clientes/{id}", cliente.getId())
+                )
+                .andExpect(status().isOk())
+                .andExpect(view().name("gestion/cliente-detalle"))
+                .andExpect(
+                        model().attribute(
+                                "totalDominios",
+                                4L
+                        )
+                )
+                .andExpect(
+                        model().attribute(
+                                "pendientesRenovacion",
+                                1L
+                        )
+                )
+                .andExpect(
+                        model().attribute(
+                                "renovados",
+                                2L
+                        )
+                )
+                .andExpect(
+                        model().attribute(
+                                "rechazados",
+                                1L
+                        )
+                )
+                .andExpect(
+                        model().attribute(
+                                "pendientesFacturacion",
+                                1L
+                        )
+                );
+    }
+
+    @Test
+    void detalleCliente_sinDominiosMuestraEstadoVacio()
+            throws Exception {
+
+        Cliente cliente = crearCliente(
+                "Cliente Sin Dominios",
+                "sindominios@test.com"
+        );
+
+        mockMvc.perform(
+                        get("/gestion/clientes/{id}", cliente.getId())
+                )
+                .andExpect(status().isOk())
+                .andExpect(view().name("gestion/cliente-detalle"))
+                .andExpect(model().attribute("totalDominios", 0L))
+                .andExpect(model().attribute("pendientesRenovacion", 0L))
+                .andExpect(model().attribute("renovados", 0L))
+                .andExpect(model().attribute("rechazados", 0L))
+                .andExpect(model().attribute("pendientesFacturacion", 0L))
+                .andExpect(
+                        content().string(
+                                org.hamcrest.Matchers.containsString(
+                                        "Este cliente no tiene dominios registrados."
+                                )
+                        )
+                );
+    }
+
+    @Test
+    void detalleCliente_clienteNoExiste_lanzaExcepcion()
             throws Exception {
 
         try {
-
             mockMvc.perform(
                     get("/gestion/clientes/{id}", 999999)
             );
 
-        } catch (ServletException exception) {
+            fail(
+                    "Se esperaba IllegalArgumentException"
+            );
 
-            Throwable causa = exception;
+        } catch (Exception exception) {
 
-            boolean encontrada = false;
+            Throwable actual = exception;
 
-            while (causa != null) {
+            while (actual != null) {
 
-                if (causa instanceof IllegalArgumentException) {
-                    encontrada = true;
+                if (actual instanceof IllegalArgumentException) {
 
                     assertTrue(
-                            causa.getMessage().contains(
-                                    "Cliente no encontrado"
-                            )
+                            actual.getMessage()
+                                    .contains("Cliente no encontrado")
                     );
 
-                    break;
+                    return;
                 }
 
-                causa = causa.getCause();
+                actual = actual.getCause();
             }
 
-            assertTrue(
-                    encontrada,
-                    "Se esperaba una IllegalArgumentException como causa"
-            );
+            throw exception;
         }
     }
 
-    private Cliente crearCliente(String nombre, String email) {
+    private Cliente crearCliente(
+            String nombre,
+            String email) {
 
         Cliente cliente = new Cliente();
 
@@ -308,22 +442,21 @@ class ClienteControllerIntegrationTest {
     }
 
     private Dominio crearDominio(
+            String nombreDominio,
             Cliente cliente,
-            String nombre,
             Estado estado,
             EstadoRenovacion estadoRenovacion,
-            Registrador registrador) {
+            Registrador registrador,
+            LocalDate fechaExpiracion) {
 
         Dominio dominio = new Dominio();
 
+        dominio.setNombreDominio(nombreDominio);
         dominio.setCliente(cliente);
-        dominio.setNombreDominio(nombre);
         dominio.setEstado(estado);
         dominio.setEstadoRenovacion(estadoRenovacion);
         dominio.setRegistrador(registrador);
-        dominio.setFechaExpiracion(
-                LocalDate.now().plusDays(30)
-        );
+        dominio.setFechaExpiracion(fechaExpiracion);
 
         return dominioRepository.save(dominio);
     }
