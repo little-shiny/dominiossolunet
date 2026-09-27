@@ -28,7 +28,19 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * El servicio debe comprobar enb la bd los dominios con fecha de expiración en 30, 15, 5, 1
+ * Procesa los avisos de renovación de los dominios próximos a expirar.
+ *
+ * El proceso:
+ * 1. Busca los dominios dentro del mayor umbral configurado.
+ * 2. Ignora los dominios ya expirados.
+ * 3. Determina el umbral correspondiente a cada dominio.
+ * 4. Evita volver a procesar un dominio para el mismo umbral.
+ * 5. Agrupa los dominios por cliente.
+ * 6. Genera un único TokenCliente por cliente.
+ * 7. Envía el aviso de renovación al cliente.
+ * 8. Si el envío es correcto, actualiza el estado del dominio
+ *    y registra el evento en el historial.
+ * 9. Informa al administrador de los posibles errores de envío.
  */
 
 @Service
