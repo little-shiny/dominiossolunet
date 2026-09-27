@@ -3,8 +3,8 @@ package com.dominiossolunet.service;
 import com.dominiossolunet.model.Dominio;
 import com.dominiossolunet.model.HistorialDominio;
 import com.dominiossolunet.model.TokenDominio;
-import com.dominiossolunet.model.enums.Estado;
 import com.dominiossolunet.model.enums.EstadoAvisoRenovacion;
+import com.dominiossolunet.model.enums.EstadoRenovacion;
 import com.dominiossolunet.model.enums.TipoEventoDominio;
 import com.dominiossolunet.repository.DominioRepository;
 import com.dominiossolunet.repository.HistorialDominioRepository;
@@ -36,11 +36,12 @@ public class GestionDominioService {
      *
      * Para poder realizar la renovación:
      * - el dominio debe existir
-     * - no debe estar ya activo
-     * - no debe estar dado de baja
+     * - no debe estar ya renovado
+     * - no debe estar rechazado
      * - el cliente debe haber confirmado la renovación
      *
-     * Además, registra la operación en el historial.
+     * La renovación se registra en estadoRenovacion y
+     * se añade una entrada al historial.
      */
     @Transactional
     public void marcarComoRenovado(int idDominio) {
@@ -52,15 +53,20 @@ public class GestionDominioService {
                         )
                 );
 
-        if (dominio.getEstado() == Estado.ACTIVO) {
+        if (dominio.getEstadoRenovacion()
+                == EstadoRenovacion.RENOVADO) {
+
             throw new IllegalStateException(
-                    "El dominio ya está activo: " + dominio.getNombreDominio()
+                    "El dominio ya está marcado como renovado: "
+                            + dominio.getNombreDominio()
             );
         }
 
-        if (dominio.getEstado() == Estado.BAJA) {
+        if (dominio.getEstadoRenovacion()
+                == EstadoRenovacion.RECHAZADO) {
+
             throw new IllegalStateException(
-                    "No se puede renovar un dominio dado de baja: "
+                    "El cliente ha rechazado la renovación del dominio: "
                             + dominio.getNombreDominio()
             );
         }
@@ -83,11 +89,27 @@ public class GestionDominioService {
             );
         }
 
-        dominio.setEstado(Estado.ACTIVO);
+        /*
+         * La renovación se ha realizado realmente en el registrador.
+         */
+        dominio.setEstadoRenovacion(
+                EstadoRenovacion.RENOVADO
+        );
 
+        /*
+         * Guardamos explícitamente el dominio actualizado.
+         */
+        dominioRepository.save(dominio);
+
+        /*
+         * Registramos la operación en el historial.
+         */
         HistorialDominio historial = new HistorialDominio();
+
         historial.setDominio(dominio);
-        historial.setTipoEvento(TipoEventoDominio.RENOVACION_REALIZADA);
+        historial.setTipoEvento(
+                TipoEventoDominio.RENOVACION_REALIZADA
+        );
         historial.setFecha(LocalDateTime.now());
         historial.setDetalle(
                 "Renovación realizada en el registrador"
