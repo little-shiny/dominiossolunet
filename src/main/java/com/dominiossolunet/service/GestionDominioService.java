@@ -116,4 +116,22 @@ public class GestionDominioService {
 
         return facturacionRepository.findByDominio(dominio);
     }
+
+    @Transactional(readOnly = true)
+    public boolean puedeMarcarComoRenovado(int idDominio) {
+
+        Dominio dominio = dominioRepository.findById(idDominio).orElseThrow(() -> new IllegalArgumentException("Dominio no encontrado: " + idDominio));
+
+        if (dominio.getEstadoRenovacion() == EstadoRenovacion.RENOVADO) {
+            return false;
+        }
+
+        if (dominio.getEstadoRenovacion() == EstadoRenovacion.RECHAZADO) {
+            return false;
+        }
+
+        Optional<TokenDominio> ultimoToken = tokenDominioRepository.findFirstByDominioOrderByIdDesc(dominio);
+
+        return ultimoToken.isPresent() && ultimoToken.get().getEstadoAvisoRenovacion() == EstadoAvisoRenovacion.CONFIRMADO;
+    }
 }

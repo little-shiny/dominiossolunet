@@ -14,9 +14,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Controller
@@ -26,17 +24,14 @@ public class GestionDominioController {
     private final GestionDominioService gestionDominioService;
     private final FacturacionService facturacionService;
 
-    public GestionDominioController(
-            GestionDominioService gestionDominioService,
-            FacturacionService facturacionService) {
+    public GestionDominioController(GestionDominioService gestionDominioService, FacturacionService facturacionService) {
 
         this.gestionDominioService = gestionDominioService;
         this.facturacionService = facturacionService;
     }
 
     @PostMapping("/dominios/{id}/renovar")
-    public String marcarComoRenovado(
-            @PathVariable int id) {
+    public String marcarComoRenovado(@PathVariable int id) {
 
         gestionDominioService.marcarComoRenovado(id);
 
@@ -44,26 +39,28 @@ public class GestionDominioController {
     }
 
     @GetMapping("/dominios")
-    public String listarDominios(
-            @RequestParam(required = false) String busqueda,
-            @RequestParam(required = false) Integer clienteId,
-            @RequestParam(required = false) Estado estado,
-            @RequestParam(required = false) EstadoRenovacion estadoRenovacion,
-            @RequestParam(required = false) Registrador registrador,
-            @RequestParam(required = false) String expiracion,
-            Model model) {
+    public String listarDominios(@RequestParam(required = false) String busqueda, @RequestParam(required = false) Integer clienteId, @RequestParam(required = false) Estado estado, @RequestParam(required = false) EstadoRenovacion estadoRenovacion, @RequestParam(required = false) Registrador registrador, @RequestParam(required = false) String expiracion, Model model) {
 
         /*
          * Obtenemos todos los dominios una sola vez.
          */
-        List<Dominio> todosLosDominios =
-                gestionDominioService.obtenerTodosLosDominios();
+        List<Dominio> todosLosDominios = gestionDominioService.obtenerTodosLosDominios();
 
         /*
          * Empezamos con todos los dominios y vamos aplicando
          * los filtros seleccionados.
          */
         List<Dominio> dominios = todosLosDominios;
+
+        /*
+         * Se obtiene la lista de los dominios que son renovables
+         */
+        Map<Integer, Boolean> dominiosRenovables = new HashMap<>();
+
+        for (Dominio dominio : dominios) {
+            dominiosRenovables.put(dominio.getId(), gestionDominioService.puedeMarcarComoRenovado(dominio.getId()));
+        }
+
 
         /*
          * FILTRO DE BÚSQUEDA
@@ -77,23 +74,7 @@ public class GestionDominioController {
 
             String texto = busqueda.trim().toLowerCase();
 
-            dominios = dominios.stream()
-                    .filter(dominio ->
-                            dominio.getNombreDominio()
-                                    .toLowerCase()
-                                    .contains(texto)
-                                    ||
-                                    dominio.getCliente()
-                                            .getNombre()
-                                            .toLowerCase()
-                                            .contains(texto)
-                                    ||
-                                    dominio.getCliente()
-                                            .getEmail()
-                                            .toLowerCase()
-                                            .contains(texto)
-                    )
-                    .collect(Collectors.toList());
+            dominios = dominios.stream().filter(dominio -> dominio.getNombreDominio().toLowerCase().contains(texto) || dominio.getCliente().getNombre().toLowerCase().contains(texto) || dominio.getCliente().getEmail().toLowerCase().contains(texto)).collect(Collectors.toList());
         }
 
         /*
@@ -101,10 +82,7 @@ public class GestionDominioController {
          */
         if (clienteId != null) {
 
-            dominios = dominios.stream()
-                    .filter(dominio ->
-                            dominio.getCliente().getId() == clienteId)
-                    .collect(Collectors.toList());
+            dominios = dominios.stream().filter(dominio -> dominio.getCliente().getId() == clienteId).collect(Collectors.toList());
         }
 
         /*
@@ -112,10 +90,7 @@ public class GestionDominioController {
          */
         if (estado != null) {
 
-            dominios = dominios.stream()
-                    .filter(dominio ->
-                            dominio.getEstado() == estado)
-                    .collect(Collectors.toList());
+            dominios = dominios.stream().filter(dominio -> dominio.getEstado() == estado).collect(Collectors.toList());
         }
 
         /*
@@ -123,10 +98,7 @@ public class GestionDominioController {
          */
         if (estadoRenovacion != null) {
 
-            dominios = dominios.stream()
-                    .filter(dominio ->
-                            dominio.getEstadoRenovacion() == estadoRenovacion)
-                    .collect(Collectors.toList());
+            dominios = dominios.stream().filter(dominio -> dominio.getEstadoRenovacion() == estadoRenovacion).collect(Collectors.toList());
         }
 
         /*
@@ -134,10 +106,7 @@ public class GestionDominioController {
          */
         if (registrador != null) {
 
-            dominios = dominios.stream()
-                    .filter(dominio ->
-                            dominio.getRegistrador() == registrador)
-                    .collect(Collectors.toList());
+            dominios = dominios.stream().filter(dominio -> dominio.getRegistrador() == registrador).collect(Collectors.toList());
         }
 
         /*
@@ -155,46 +124,19 @@ public class GestionDominioController {
 
                 case "7":
 
-                    dominios = dominios.stream()
-                            .filter(dominio ->
-                                    dominio.getFechaExpiracion() != null
-                                            &&
-                                            !dominio.getFechaExpiracion()
-                                                    .isBefore(hoy)
-                                            &&
-                                            !dominio.getFechaExpiracion()
-                                                    .isAfter(hoy.plusDays(7))
-                            )
-                            .collect(Collectors.toList());
+                    dominios = dominios.stream().filter(dominio -> dominio.getFechaExpiracion() != null && !dominio.getFechaExpiracion().isBefore(hoy) && !dominio.getFechaExpiracion().isAfter(hoy.plusDays(7))).collect(Collectors.toList());
 
                     break;
 
                 case "30":
 
-                    dominios = dominios.stream()
-                            .filter(dominio ->
-                                    dominio.getFechaExpiracion() != null
-                                            &&
-                                            !dominio.getFechaExpiracion()
-                                                    .isBefore(hoy)
-                                            &&
-                                            !dominio.getFechaExpiracion()
-                                                    .isAfter(hoy.plusDays(30))
-                            )
-                            .collect(Collectors.toList());
+                    dominios = dominios.stream().filter(dominio -> dominio.getFechaExpiracion() != null && !dominio.getFechaExpiracion().isBefore(hoy) && !dominio.getFechaExpiracion().isAfter(hoy.plusDays(30))).collect(Collectors.toList());
 
                     break;
 
                 case "expirados":
 
-                    dominios = dominios.stream()
-                            .filter(dominio ->
-                                    dominio.getFechaExpiracion() != null
-                                            &&
-                                            dominio.getFechaExpiracion()
-                                                    .isBefore(hoy)
-                            )
-                            .collect(Collectors.toList());
+                    dominios = dominios.stream().filter(dominio -> dominio.getFechaExpiracion() != null && dominio.getFechaExpiracion().isBefore(hoy)).collect(Collectors.toList());
 
                     break;
 
@@ -216,33 +158,18 @@ public class GestionDominioController {
          * De esta forma el selector de clientes siempre
          * muestra todos los clientes disponibles.
          */
-        List<Cliente> clientes = todosLosDominios.stream()
-                .map(Dominio::getCliente)
-                .distinct()
-                .sorted((a, b) ->
-                        a.getNombre()
-                                .compareToIgnoreCase(b.getNombre()))
-                .collect(Collectors.toList());
+        List<Cliente> clientes = todosLosDominios.stream().map(Dominio::getCliente).distinct().sorted((a, b) -> a.getNombre().compareToIgnoreCase(b.getNombre())).collect(Collectors.toList());
 
         /*
          * DATOS NECESARIOS PARA LOS SELECTS DEL HTML
          */
         model.addAttribute("clientes", clientes);
 
-        model.addAttribute(
-                "estados",
-                Arrays.asList(Estado.values())
-        );
+        model.addAttribute("estados", Arrays.asList(Estado.values()));
 
-        model.addAttribute(
-                "estadosRenovacion",
-                Arrays.asList(EstadoRenovacion.values())
-        );
+        model.addAttribute("estadosRenovacion", Arrays.asList(EstadoRenovacion.values()));
 
-        model.addAttribute(
-                "registradores",
-                Arrays.asList(Registrador.values())
-        );
+        model.addAttribute("registradores", Arrays.asList(Registrador.values()));
 
         /*
          * RESULTADO DEL FILTRADO
@@ -260,6 +187,9 @@ public class GestionDominioController {
         model.addAttribute("estadoRenovacion", estadoRenovacion);
         model.addAttribute("registrador", registrador);
         model.addAttribute("expiracion", expiracion);
+        model.addAttribute("dominios", dominios);
+        model.addAttribute("dominiosRenovables", dominiosRenovables);
+
 
         return "gestion/dominios";
     }
@@ -268,32 +198,28 @@ public class GestionDominioController {
      * Vista de un único dominio en detalle.
      */
     @GetMapping("/dominios/{id}")
-    public String detalleDominio(
-            @PathVariable int id,
-            Model model) {
+    public String detalleDominio(@PathVariable int id, Model model) {
 
-        Dominio dominio =
-                gestionDominioService.obtenerDominio(id);
+        Dominio dominio = gestionDominioService.obtenerDominio(id);
 
-        List<HistorialDominio> historial =
-                gestionDominioService.obtenerHistorial(id);
+        List<HistorialDominio> historial = gestionDominioService.obtenerHistorial(id);
 
-        Optional<Facturacion> facturacion =
-                gestionDominioService.obtenerFacturacion(id);
+        Optional<Facturacion> facturacion = gestionDominioService.obtenerFacturacion(id);
+
+        boolean puedeRenovar = gestionDominioService.puedeMarcarComoRenovado(id);
+
+        model.addAttribute("puedeRenovar", puedeRenovar);
 
         model.addAttribute("dominio", dominio);
         model.addAttribute("historial", historial);
-        model.addAttribute(
-                "facturacion",
-                facturacion.orElse(null)
-        );
+        model.addAttribute("facturacion", facturacion.orElse(null));
+        model.addAttribute("puedeRenovar", puedeRenovar);
 
         return "gestion/dominio-detalle";
     }
 
     @PostMapping("/dominios/{id}/facturar")
-    public String marcarComoFacturado(
-            @PathVariable int id) {
+    public String marcarComoFacturado(@PathVariable int id) {
 
         facturacionService.marcarComoFacturado(id);
 

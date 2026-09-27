@@ -454,13 +454,7 @@
                 <button
                         class="primary"
                         type="submit"
-                        th:disabled="${
-                        dominio.estadoRenovacion != null
-                        and (
-                            dominio.estadoRenovacion.name() == 'RENOVADO'
-                            or dominio.estadoRenovacion.name() == 'RECHAZADO'
-                        )
-                    }">
+                        th:disabled="${!puedeRenovar}">
 
                     Marcar como renovado
 
