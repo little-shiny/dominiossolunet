@@ -1,6 +1,7 @@
 package com.dominiossolunet.controller;
 
 import com.dominiossolunet.model.Dominio;
+import com.dominiossolunet.model.Facturacion;
 import com.dominiossolunet.model.HistorialDominio;
 import com.dominiossolunet.service.FacturacionService;
 import com.dominiossolunet.service.GestionDominioService;
@@ -9,6 +10,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @Controller
 @RequestMapping("/gestion")
@@ -46,12 +48,25 @@ public class GestionDominioController {
      * Vista de un único dominio en detalle
      */
     @GetMapping("/dominios/{id}")
-    public String detalleDominio(@PathVariable int id, Model model){
-        Dominio dominio = gestionDominioService.obtenerDominio(id);
-        List<HistorialDominio> historial = gestionDominioService.obtenerHistorial(id);
+    public String detalleDominio(
+            @PathVariable int id,
+            Model model) {
+
+        Dominio dominio =
+                gestionDominioService.obtenerDominio(id);
+
+        List<HistorialDominio> historial =
+                gestionDominioService.obtenerHistorial(id);
+
+        Optional<Facturacion> facturacion =
+                gestionDominioService.obtenerFacturacion(id);
 
         model.addAttribute("dominio", dominio);
         model.addAttribute("historial", historial);
+        model.addAttribute(
+                "facturacion",
+                facturacion.orElse(null)
+        );
 
         return "gestion/dominio-detalle";
     }

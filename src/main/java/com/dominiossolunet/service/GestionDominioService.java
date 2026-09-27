@@ -1,12 +1,14 @@
 package com.dominiossolunet.service;
 
 import com.dominiossolunet.model.Dominio;
+import com.dominiossolunet.model.Facturacion;
 import com.dominiossolunet.model.HistorialDominio;
 import com.dominiossolunet.model.TokenDominio;
 import com.dominiossolunet.model.enums.EstadoAvisoRenovacion;
 import com.dominiossolunet.model.enums.EstadoRenovacion;
 import com.dominiossolunet.model.enums.TipoEventoDominio;
 import com.dominiossolunet.repository.DominioRepository;
+import com.dominiossolunet.repository.FacturacionRepository;
 import com.dominiossolunet.repository.HistorialDominioRepository;
 import com.dominiossolunet.repository.TokenDominioRepository;
 import org.springframework.stereotype.Service;
@@ -14,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class GestionDominioService {
@@ -22,11 +25,14 @@ public class GestionDominioService {
     private final HistorialDominioRepository historialDominioRepository;
     private final TokenDominioRepository tokenDominioRepository;
 
-    public GestionDominioService(DominioRepository dominioRepository, HistorialDominioRepository historialDominioRepository, TokenDominioRepository tokenDominioRepository) {
+    private final FacturacionRepository facturacionRepository;
+
+    public GestionDominioService(DominioRepository dominioRepository, HistorialDominioRepository historialDominioRepository, TokenDominioRepository tokenDominioRepository, FacturacionRepository facturacionRepository) {
 
         this.dominioRepository = dominioRepository;
         this.historialDominioRepository = historialDominioRepository;
         this.tokenDominioRepository = tokenDominioRepository;
+        this.facturacionRepository = facturacionRepository;
     }
 
     /**
@@ -101,5 +107,13 @@ public class GestionDominioService {
         Dominio dominio = obtenerDominio(idDominio);
 
         return historialDominioRepository.findByDominioOrderByFechaDesc(dominio);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Facturacion> obtenerFacturacion(int idDominio) {
+
+        Dominio dominio = obtenerDominio(idDominio);
+
+        return facturacionRepository.findByDominio(dominio);
     }
 }
