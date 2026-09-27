@@ -1,0 +1,230 @@
+```html
+<!DOCTYPE html>
+<html lang="es"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Gestión de dominios</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f5f6f8;
+            color: #333;
+        }
+
+        header {
+            background-color: #1f2937;
+            color: white;
+            padding: 20px 30px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .panel {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .panel-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        .tabla-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 14px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            background-color: #f9fafb;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        tr:hover {
+            background-color: #f9fafb;
+        }
+
+        .estado {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .estado-pendiente {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .estado-renovado {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .estado-rechazado {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+
+        .acciones {
+            white-space: nowrap;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .btn-renovar {
+            background-color: #2563eb;
+            color: white;
+        }
+
+        .btn-renovar:hover {
+            background-color: #1d4ed8;
+        }
+
+        .sin-dominios {
+            padding: 40px;
+            text-align: center;
+            color: #6b7280;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Gestión de dominios</h1>
+</header>
+
+<main>
+
+    <div class="panel">
+
+        <div class="panel-header">
+            <h2>Dominios</h2>
+        </div>
+
+        <div th:if="${#lists.isEmpty(dominios)}"
+             class="sin-dominios">
+            No hay dominios registrados.
+        </div>
+
+        <div th:unless="${#lists.isEmpty(dominios)}"
+             class="tabla-container">
+
+            <table>
+
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Dominio</th>
+                    <th>Estado renovación</th>
+                    <th>Acciones</th>
+                </tr>
+                </thead>
+
+                <tbody>
+
+                <tr th:each="dominio : ${dominios}">
+
+                    <td th:text="${dominio.id}">
+                        1
+                    </td>
+
+                    <td th:text="${dominio.nombreDominio}">
+                        ejemplo.com
+                    </td>
+
+                    <td>
+                        <span class="estado"
+                              th:classappend="${dominio.estadoRenovacion.name() == 'RENOVADO'} ? ' estado-renovado' :
+                                               (${dominio.estadoRenovacion.name() == 'RECHAZADO'} ? ' estado-rechazado' :
+                                               ' estado-pendiente')"
+                              th:text="${dominio.estadoRenovacion}">
+                            PENDIENTE_RENOVACION
+                        </span>
+                    </td>
+
+                    <td class="acciones">
+
+                        <!--
+                            Este formulario lo conectaremos posteriormente
+                            con marcarComoRenovado().
+                        -->
+                        <form th:action="@{'/gestion/dominios/' + ${dominio.id} + '/renovar'}"
+                              method="post"
+                              style="display: inline;">
+
+                            <button type="submit"
+                                    class="btn btn-renovar">
+                                Renovar
+                            </button>
+
+                        </form>
+
+                    </td>
+
+                </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</main>
+
+</body>
+</html>
+```

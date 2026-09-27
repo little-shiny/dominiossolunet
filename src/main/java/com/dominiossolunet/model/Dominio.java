@@ -17,7 +17,6 @@ import java.time.LocalDate;
 public class Dominio {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Setter(AccessLevel.NONE)
     @NotNull
     private int id;
 

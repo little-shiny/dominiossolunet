@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 public class GestionDominioService {
@@ -116,5 +117,9 @@ public class GestionDominioService {
         );
 
         historialDominioRepository.save(historial);
+    }
+
+    public List<Dominio> obtenerTodosLosDominios() {
+        return dominioRepository.findAll();
     }
 }
