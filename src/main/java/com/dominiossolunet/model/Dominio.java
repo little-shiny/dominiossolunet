@@ -1,6 +1,7 @@
 package com.dominiossolunet.model;
 
 import com.dominiossolunet.model.enums.Estado;
+import com.dominiossolunet.model.enums.EstadoRenovacion;
 import com.dominiossolunet.model.enums.Registrador;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -16,13 +17,15 @@ import java.time.LocalDate;
 public class Dominio {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Setter(AccessLevel.NONE)
     @NotNull
     private int id;
 
     @NotNull
     @Enumerated(EnumType.STRING)
     private Estado estado;
+
+    @Enumerated(EnumType.STRING)
+    private EstadoRenovacion estadoRenovacion;
 
     private LocalDate fechaExpiracion;
 

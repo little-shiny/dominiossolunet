@@ -3,17 +3,22 @@ package com.dominiossolunet.service;
 import com.dominiossolunet.dto.ResultadoValidacionRec;
 import com.dominiossolunet.model.Cliente;
 import com.dominiossolunet.model.Dominio;
+import com.dominiossolunet.model.HistorialDominio;
 import com.dominiossolunet.model.TokenCliente;
 import com.dominiossolunet.model.TokenDominio;
 import com.dominiossolunet.model.enums.EstadoAvisoRenovacion;
+import com.dominiossolunet.model.enums.EstadoRenovacion;
 import com.dominiossolunet.model.enums.ResultadoValidacion;
+import com.dominiossolunet.model.enums.TipoEventoDominio;
+import com.dominiossolunet.repository.HistorialDominioRepository;
 import com.dominiossolunet.repository.TokenClienteRepository;
 import com.dominiossolunet.repository.TokenDominioRepository;
+import jakarta.annotation.Nonnull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -22,28 +27,71 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Métodos a implementar: generar un nuevo token, validarlo(que existe, que no ha caducado, que no está usado
- *
+ * Servicio encargado de la gestión de los tokens de renovación
+ * y de las respuestas de los clientes a los avisos de renovación.
  */
 @Service
 public class TokenService {
 
-    private final TokenClienteRepository tokenClienteRepository; //final porque va en el constructor y es unico
-    private final TokenDominioRepository tokenDominioRepository;
-    private static final Logger logger =  LoggerFactory.getLogger(TokenService.class);
+    private static final Logger logger = LoggerFactory.getLogger(TokenService.class);
 
+    private final TokenClienteRepository tokenClienteRepository;
+    private final TokenDominioRepository tokenDominioRepository;
+    private final HistorialDominioRepository historialDominioRepository;
 
     @Value("${token.dias-expiracion}")
     private int diasExpiracionToken;
 
-    //Constructor
-    public TokenService(TokenClienteRepository tokenClienteRepository, TokenDominioRepository tokenDominioRepository) {
+    public TokenService(TokenClienteRepository tokenClienteRepository, TokenDominioRepository tokenDominioRepository, HistorialDominioRepository historialDominioRepository) {
+
         this.tokenClienteRepository = tokenClienteRepository;
         this.tokenDominioRepository = tokenDominioRepository;
+        this.historialDominioRepository = historialDominioRepository;
     }
 
-    public TokenCliente generarToken(Cliente cliente, List<Dominio> dominios) {
+    /**
+     * Crea el registro de historial correspondiente
+     * a la respuesta del cliente.
+     *
+     * @param dominio        dominio sobre el que se ha respondido
+     * @param ahora          fecha y hora de la respuesta
+     * @param marcadoRenovar true si el cliente acepta renovar
+     * @return registro de historial
+     */
+    @Nonnull
+    private static HistorialDominio crearHistorialRespuestaCliente(Dominio dominio, LocalDateTime ahora, boolean marcadoRenovar) {
 
+        HistorialDominio historial = new HistorialDominio();
+
+        historial.setDominio(dominio);
+        historial.setFecha(ahora);
+
+        if (marcadoRenovar) {
+
+            historial.setTipoEvento(TipoEventoDominio.CLIENTE_ACEPTA_RENOVACION);
+
+            historial.setDetalle("El cliente ha aceptado la renovación del dominio");
+
+        } else {
+
+            historial.setTipoEvento(TipoEventoDominio.CLIENTE_RECHAZA_RENOVACION);
+
+            historial.setDetalle("El cliente ha rechazado la renovación del dominio");
+        }
+
+        return historial;
+    }
+
+    /**
+     * Genera un token para un cliente y crea la relación
+     * entre el token y cada uno de sus dominios.
+     *
+     * @param cliente  cliente al que pertenece el aviso
+     * @param dominios dominios incluidos en el aviso
+     * @return token generado
+     */
+    @Transactional
+    public TokenCliente generarToken(Cliente cliente, List<Dominio> dominios) {
 
         LocalDateTime ahora = LocalDateTime.now();
 
@@ -51,7 +99,6 @@ public class TokenService {
 
         tokenCliente.setFechaCreacion(ahora);
         tokenCliente.setFechaExpiracion(ahora.plusDays(diasExpiracionToken));
-
         tokenCliente.setToken(UUID.randomUUID().toString());
         tokenCliente.setUsado(false);
         tokenCliente.setCliente(cliente);
@@ -61,6 +108,7 @@ public class TokenService {
         logger.info("TokenCliente guardado correctamente para el cliente {}", cliente.getNombre());
 
         for (Dominio dominio : dominios) {
+
             TokenDominio tokenDominio = new TokenDominio();
 
             tokenDominio.setTokenCliente(tokenCliente);
@@ -70,111 +118,166 @@ public class TokenService {
             tokenDominioRepository.save(tokenDominio);
         }
 
-        logger.info("Añadidos {} TokenDominios al cliente {}", dominios.size(), cliente.getNombre());
+        logger.info("Añadidos {} TokenDominio al cliente {}", dominios.size(), cliente.getNombre());
 
         return tokenCliente;
     }
 
+    /**
+     * Valida un token comprobando:
+     * - que exista;
+     * - que no haya sido utilizado;
+     * - que no haya expirado.
+     *
+     * @param token valor del token
+     * @return resultado de la validación
+     */
     public ResultadoValidacionRec validarToken(String token) {
 
         Optional<TokenCliente> resultado = tokenClienteRepository.findByToken(token);
-        TokenCliente tokenEncontrado;
 
-        if (resultado.isPresent()) {
+        if (resultado.isEmpty()) {
 
-            tokenEncontrado = resultado.get();
-
-            if (tokenEncontrado.isUsado()) {
-                return new ResultadoValidacionRec(ResultadoValidacion.USADO, tokenEncontrado);
-            } else if (tokenEncontrado.getFechaExpiracion().isBefore(LocalDateTime.now())) {
-                return new ResultadoValidacionRec(ResultadoValidacion.EXPIRADO, tokenEncontrado);
-            }
-            return new ResultadoValidacionRec(ResultadoValidacion.VALIDO, tokenEncontrado);
-
-        } else {
             return new ResultadoValidacionRec(ResultadoValidacion.NO_ENCONTRADO, null);
         }
+
+        TokenCliente tokenEncontrado = resultado.get();
+
+        if (tokenEncontrado.isUsado()) {
+
+            return new ResultadoValidacionRec(ResultadoValidacion.USADO, tokenEncontrado);
+        }
+
+        if (tokenEncontrado.getFechaExpiracion().isBefore(LocalDateTime.now())) {
+
+            return new ResultadoValidacionRec(ResultadoValidacion.EXPIRADO, tokenEncontrado);
+        }
+
+        return new ResultadoValidacionRec(ResultadoValidacion.VALIDO, tokenEncontrado);
     }
 
-    // Reemplazable por el record en futuro
+    /**
+     * Marca un token como utilizado.
+     * <p>
+     * Al estar dentro de una transacción, no es necesario
+     * realizar explícitamente save() después de modificar
+     * la entidad.
+     *
+     * @param token valor del token
+     */
     @Transactional
     public void marcarComoUsado(String token) {
 
-        TokenCliente tokenCliente =
-                tokenClienteRepository.findByToken(token).orElseThrow(() ->
-                    new IllegalArgumentException("Token no encontrado: " + token));
+        TokenCliente tokenCliente = tokenClienteRepository.findByToken(token).orElseThrow(() -> new IllegalArgumentException("Token no encontrado: " + token));
 
         tokenCliente.setUsado(true);
 
-        logger.info("Token marcado como usado para el cliente ");
-        // No necesitamos save (dirty checking)
+        logger.info("Token marcado como usado para el cliente {}", tokenCliente.getCliente().getNombre());
     }
 
+    /**
+     * Obtiene todos los TokenDominio asociados a un TokenCliente.
+     *
+     * @param token token del cliente
+     * @return lista de relaciones token-dominio
+     */
     public List<TokenDominio> obtenerTokenDominioPorTokenCliente(TokenCliente token) {
+
         return tokenDominioRepository.findByTokenCliente(token);
     }
 
     /**
-     * Metodo que a partir de una lista de integers con las ids de los dominios marcados por el usuario marca cada
-     * uno de los TokenDominio como tramite aceptado o rechazado según el cliente haya especificado
+     * Procesa la respuesta del cliente al formulario de renovación.
+     * <p>
+     * Para cada dominio:
+     * <p>
+     * - Actualiza el estado de la respuesta del TokenDominio.
+     * - Registra la fecha de interacción del cliente.
+     * - Actualiza el estado de renovación del dominio.
+     * - Registra el evento correspondiente en el historial.
+     * <p>
+     * Finalmente, marca el TokenCliente como utilizado.
+     * <p>
+     * Es importante distinguir:
+     * <p>
+     * CLIENTE_ACEPTA_RENOVACION
+     * ↓
+     * PENDIENTE_RENOVACION
+     * <p>
+     * Esto NO significa todavía que el dominio haya sido
+     * renovado en el registrador.
+     * <p>
+     * La renovación real se registrará posteriormente
+     * desde el panel de gestión.
+     *
+     * @param token               token del cliente
+     * @param idsDominiosMarcados IDs de los dominios que el cliente acepta renovar
      */
-    @Transactional
-    public void marcaEstadoRenovacionPorListaIdDominio(
-            List<Integer> idsDominiosMarcadosCliente,
-            ResultadoValidacionRec resultadoValidacion) {
-
-        TokenCliente tokenCliente =
-                tokenClienteRepository.findByToken(
-                        resultadoValidacion.token().getToken()
-                ).orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Token no encontrado: "
-                                        + resultadoValidacion.token().getToken()
-                        )
-                );
-
-        HashSet<Integer> idsMarcados =
-                new HashSet<>(idsDominiosMarcadosCliente);
-
-        logger.info("{} Dominios marcados por el cliente para renovar", idsDominiosMarcadosCliente.size());
-
-        List<TokenDominio> tokenDominioListaCompleta =
-                tokenDominioRepository.findByTokenCliente(tokenCliente);
-
-        for (TokenDominio td : tokenDominioListaCompleta) {
-
-            if (idsMarcados.contains(td.getDominio().getId())) {
-                td.setEstadoAvisoRenovacion(
-                        EstadoAvisoRenovacion.CONFIRMADO
-                );
-            } else {
-                td.setEstadoAvisoRenovacion(
-                        EstadoAvisoRenovacion.RECHAZADO
-                );
-            }
-        }
-
-        tokenCliente.setUsado(true);
-    }
-
-
     @Transactional
     public void procesarConfirmacion(TokenCliente token, List<Integer> idsDominiosMarcados) {
 
-        HashSet<Integer> setTokens = new HashSet<>(idsDominiosMarcados);
+        HashSet<Integer> idsMarcados = new HashSet<>(idsDominiosMarcados);
 
-        // obtener la lista de TokenDominio asociada a ese Tokencliente
-        List<TokenDominio> tokenDominioList =
-                obtenerTokenDominioPorTokenCliente(token);
+        List<TokenDominio> tokenDominioList = obtenerTokenDominioPorTokenCliente(token);
 
-        for (TokenDominio td : tokenDominioList) {
-            EstadoAvisoRenovacion estado = (setTokens.contains(td.getDominio().getId())) ?
-                    EstadoAvisoRenovacion.CONFIRMADO :
-                    EstadoAvisoRenovacion.RECHAZADO;
-            td.setEstadoAvisoRenovacion(estado);
+        LocalDateTime ahora = LocalDateTime.now();
+
+        logger.info("Procesando respuesta del cliente {}. Dominios marcados: {}", token.getCliente().getNombre(), idsDominiosMarcados.size());
+
+        for (TokenDominio tokenDominio : tokenDominioList) {
+
+            Dominio dominio = tokenDominio.getDominio();
+
+            boolean marcadoRenovar = idsMarcados.contains(dominio.getId());
+
+            /*
+             * Guardamos la fecha en la que el cliente
+             * respondió sobre este dominio.
+             */
+            tokenDominio.setFechaInteraccionCliente(ahora);
+
+            /*
+             * Actualizamos el estado de la respuesta
+             * asociada al aviso.
+             */
+            if (marcadoRenovar) {
+
+                tokenDominio.setEstadoAvisoRenovacion(EstadoAvisoRenovacion.CONFIRMADO);
+
+                /*
+                 * El cliente ha aceptado renovar.
+                 *
+                 * Todavía NO significa que el dominio
+                 * haya sido renovado en el registrador.
+                 */
+                dominio.setEstadoRenovacion(EstadoRenovacion.PENDIENTE_RENOVACION);
+
+                logger.info("El cliente ha aceptado renovar el dominio {}", dominio.getNombreDominio());
+
+            } else {
+
+                tokenDominio.setEstadoAvisoRenovacion(EstadoAvisoRenovacion.RECHAZADO);
+
+                /*
+                 * El cliente ha rechazado la renovación.
+                 */
+                dominio.setEstadoRenovacion(EstadoRenovacion.RECHAZADO);
+
+                logger.info("El cliente ha rechazado renovar el dominio {}", dominio.getNombreDominio());
+            }
+
+            /*
+             * Registramos el evento permanente en el historial.
+             */
+            HistorialDominio historial = crearHistorialRespuestaCliente(dominio, ahora, marcadoRenovar);
+
+            historialDominioRepository.save(historial);
         }
 
+        /*
+         * El cliente ya ha terminado de responder
+         * al formulario.
+         */
         marcarComoUsado(token.getToken());
     }
 }
-

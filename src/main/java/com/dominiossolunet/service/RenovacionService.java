@@ -4,9 +4,12 @@ import com.dominiossolunet.dto.ErrorEnvioEmail;
 import com.dominiossolunet.dto.ResultadoEnvioEmail;
 import com.dominiossolunet.model.Cliente;
 import com.dominiossolunet.model.Dominio;
+import com.dominiossolunet.model.HistorialDominio;
 import com.dominiossolunet.model.TokenCliente;
 import com.dominiossolunet.model.enums.Estado;
+import com.dominiossolunet.model.enums.TipoEventoDominio;
 import com.dominiossolunet.repository.DominioRepository;
+import com.dominiossolunet.repository.HistorialDominioRepository;
 import com.dominiossolunet.utils.RenovacionUrlBuilder;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
@@ -16,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -24,7 +28,19 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * El servicio debe comprobar enb la bd los dominios con fecha de expiración en 30, 15, 5, 1
+ * Procesa los avisos de renovación de los dominios próximos a expirar.
+ *
+ * El proceso:
+ * 1. Busca los dominios dentro del mayor umbral configurado.
+ * 2. Ignora los dominios ya expirados.
+ * 3. Determina el umbral correspondiente a cada dominio.
+ * 4. Evita volver a procesar un dominio para el mismo umbral.
+ * 5. Agrupa los dominios por cliente.
+ * 6. Genera un único TokenCliente por cliente.
+ * 7. Envía el aviso de renovación al cliente.
+ * 8. Si el envío es correcto, actualiza el estado del dominio
+ *    y registra el evento en el historial.
+ * 9. Informa al administrador de los posibles errores de envío.
  */
 
 @Service
@@ -33,17 +49,22 @@ public class RenovacionService {
     private final DominioRepository dominioRepository; // Es final porque va en el constructor
     private final TokenService tokenService;  //idem
     private final EmailService emailService;
+
+    private final HistorialDominioRepository historialDominioRepository;
+
+
     private final RenovacionUrlBuilder renovacionUrlBuilder;
     @Value("${renovacion.umbrales}")
     private List<Integer> umbrales;
     private int umbralMaximo;
 
     //Constructor
-    public RenovacionService(DominioRepository dominioRepository, TokenService tokenService, EmailService emailService, RenovacionUrlBuilder renovacionUrlBuilder) {
+    public RenovacionService(DominioRepository dominioRepository, TokenService tokenService, EmailService emailService, RenovacionUrlBuilder renovacionUrlBuilder, HistorialDominioRepository historialDominioRepository) {
         this.dominioRepository = dominioRepository;
         this.tokenService = tokenService;
         this.emailService = emailService;
         this.renovacionUrlBuilder = renovacionUrlBuilder;
+        this.historialDominioRepository = historialDominioRepository;
     }
 
     /**
@@ -59,18 +80,18 @@ public class RenovacionService {
 
     /**
      * Procesa los avisos de renovación de los dominios próximos a expirar.
-     * <p>
+     *
      * El proceso:
      * 1. Busca los dominios dentro del mayor umbral configurado.
      * 2. Ignora los dominios ya expirados.
-     * 3. Determina el umbral que corresponde a cada dominio.
+     * 3. Determina el umbral correspondiente a cada dominio.
      * 4. Evita volver a procesar un dominio para el mismo umbral.
-     * 5. Actualiza el estado y la información del último aviso.
-     * 6. Agrupa los dominios por cliente.
-     * 7. Genera un único TokenCliente por cliente.
-     * <p>
-     * El envío del correo se realizará posteriormente mediante EmailService.
-     *
+     * 5. Agrupa los dominios por cliente.
+     * 6. Genera un único TokenCliente por cliente.
+     * 7. Envía el aviso de renovación al cliente.
+     * 8. Si el envío es correcto, actualiza el estado del dominio
+     *    y registra el evento en el historial.
+     * 9. Informa al administrador de los posibles errores de envío.
      */
 
     @Transactional
@@ -80,6 +101,7 @@ public class RenovacionService {
         List<ErrorEnvioEmail> erroresEnvio = new ArrayList<>();
 
         LocalDate hoy = LocalDate.now();
+        LocalDateTime ahora = LocalDateTime.now();
 
         List<Estado> estadosValidos = List.of(Estado.ACTIVO, Estado.AVISO_ENVIADO);
 
@@ -116,19 +138,34 @@ public class RenovacionService {
 
             ResultadoEnvioEmail resultado = emailService.enviarAvisoRenovacion(cliente, dominios, urlRenovacion);
 
-            if (resultado.isEnviado()) {
-                marcarComoAvisado(dominios, hoy);
+            if (resultado.enviado()) {
+
+                marcarComoAvisado(dominios, hoy, ahora);
+
             } else {
-                erroresEnvio.add(new ErrorEnvioEmail(cliente, dominios, resultado.getMensajeError()));
+
+                logger.error(
+                        "No se pudo enviar el aviso de renovación al cliente {}: {}",
+                        cliente.getEmail(),
+                        resultado.mensajeError()
+                );
+
+                erroresEnvio.add(
+                        new ErrorEnvioEmail(
+                                cliente,
+                                dominios,
+                                resultado.mensajeError()
+                        )
+                );
             }
         }
 
         ResultadoEnvioEmail resultadoInforme = emailService.enviarInformeRenovacion(erroresEnvio);
 
-        if (resultadoInforme.isEnviado()) {
+        if (resultadoInforme.enviado()) {
             logger.info("Informe de renovación enviado correctamente al administrador");
         } else {
-            logger.error("No se pudo enviar el informe al administrador - {}", resultadoInforme.getMensajeError());
+            logger.error("No se pudo enviar el informe al administrador - {}", resultadoInforme.mensajeError());
         }
     }
 
@@ -171,7 +208,11 @@ public class RenovacionService {
      * Recorre la lista de dominios por parametro , guarda su umbral, cambia el estado a aviso como enviado y guarda
      *
      */
-    private void marcarComoAvisado(List<Dominio> dominios, LocalDate fechaActual) {
+    private void marcarComoAvisado(
+            List<Dominio> dominios,
+            LocalDate fechaActual,
+            LocalDateTime fechaHoraActual) {
+
         for (Dominio dominio : dominios) {
 
             Integer umbral = determinarUmbral(dominio, fechaActual);
@@ -180,6 +221,18 @@ public class RenovacionService {
             dominio.setUltimoUmbralAvisado(umbral);
             dominio.setUltimoAviso(fechaActual);
 
+            HistorialDominio historial = new HistorialDominio();
+
+            historial.setDominio(dominio);
+            historial.setTipoEvento(
+                    TipoEventoDominio.AVISO_RENOVACION_ENVIADO
+            );
+            historial.setFecha(fechaHoraActual);
+            historial.setDetalle(
+                    "Aviso de renovación enviado al cliente"
+            );
+
+            historialDominioRepository.save(historial);
         }
     }
 }

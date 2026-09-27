@@ -2,6 +2,54 @@
 
 All notable changes to this project are documented in this file.
 
+## [Unreleased] - 2026-09-25
+
+### Added
+- Añadido `HistorialDominio` para registrar los eventos relevantes del ciclo de vida de un dominio.
+- Añadido `HistorialDominioRepository` para consultar el historial de cada dominio ordenado por fecha.
+- Añadido el evento `AVISO_RENOVACION_ENVIADO` al proceso automático de avisos.
+- Añadido el registro de eventos de:
+    - `CLIENTE_ACEPTA_RENOVACION`
+    - `CLIENTE_RECHAZA_RENOVACION`
+    - `RENOVACION_REALIZADA`
+    - `FACTURACION_REALIZADA`
+- Añadido registro histórico individual para cada dominio incluido en un aviso de renovación.
+- Añadidos tests para comprobar que los avisos enviados correctamente generan su correspondiente registro en el historial.
+- Añadidos tests para comprobar que un error en el envío del correo no genera un evento de aviso enviado.
+
+### Changed
+- Modificado `RenovacionService` para guardar un `HistorialDominio` cuando el email de renovación se envía correctamente.
+- El registro `AVISO_RENOVACION_ENVIADO` se realiza únicamente después de confirmar el envío correcto del correo.
+- Manteniendo la lógica existente, los dominios se marcan como `AVISO_ENVIADO` únicamente cuando el envío ha sido satisfactorio.
+- `TokenService.procesarConfirmacion()` registra ahora el resultado de la respuesta del cliente en el historial.
+- Las respuestas del cliente se registran como:
+    - `CLIENTE_ACEPTA_RENOVACION`
+    - `CLIENTE_RECHAZA_RENOVACION`
+- La renovación realizada por el gestor se registra mediante `RENOVACION_REALIZADA`.
+- Se mantiene separado el estado operativo del dominio de la respuesta del cliente: aceptar una renovación no marca directamente el dominio como `ACTIVO`.
+
+### Tests
+- Ampliados los tests de `RenovacionService` para comprobar la creación del historial.
+- Comprobado que se genera un evento histórico por cada dominio, incluso cuando varios dominios pertenecen al mismo cliente.
+- Comprobado que no se genera historial cuando el email no se puede enviar.
+- Ampliados los tests de `TokenService` para cubrir:
+    - todos los dominios confirmados;
+    - algunos dominios confirmados;
+    - ningún dominio confirmado;
+    - token usado después de procesar la confirmación;
+    - creación del historial correspondiente a cada respuesta.
+- Corregidos los tests de `TokenService` para asignar IDs reales a los dominios y evitar que todos utilizaran el ID `0`.
+- Corregidos los tests para no esperar un `tokenClienteRepository.save()` en `marcarComoUsado()`, ya que la actualización se realiza mediante dirty checking de JPA.
+
+### Refactoring
+- Limpiados y reorganizados los tests de `TokenService`.
+- Eliminada duplicidad en los tests de `procesarConfirmacion()`.
+- Separadas las responsabilidades entre:
+    - respuesta del cliente;
+    - renovación real del dominio;
+    - facturación;
+    - historial de eventos.
+
 ## [1.0.0] - 2026-09-25
 
 ### Added

@@ -1,16 +1,11 @@
 package com.dominiossolunet.service;
 
-import com.dominiossolunet.model.Cliente;
-import com.dominiossolunet.model.Dominio;
-import com.dominiossolunet.model.TokenCliente;
-import com.dominiossolunet.model.TokenDominio;
+import com.dominiossolunet.model.*;
 import com.dominiossolunet.model.enums.Estado;
 import com.dominiossolunet.model.enums.EstadoAvisoRenovacion;
 import com.dominiossolunet.model.enums.Registrador;
-import com.dominiossolunet.repository.ClienteRepository;
-import com.dominiossolunet.repository.DominioRepository;
-import com.dominiossolunet.repository.TokenClienteRepository;
-import com.dominiossolunet.repository.TokenDominioRepository;
+import com.dominiossolunet.model.enums.TipoEventoDominio;
+import com.dominiossolunet.repository.*;
 import com.icegreen.greenmail.junit5.GreenMailExtension;
 import com.icegreen.greenmail.store.FolderException;
 import com.icegreen.greenmail.util.ServerSetupTest;
@@ -39,8 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RenovacionServiceIntegrationTest {
 
     @RegisterExtension
-    static GreenMailExtension greenMail =
-            new GreenMailExtension(ServerSetupTest.SMTP);
+    static GreenMailExtension greenMail = new GreenMailExtension(ServerSetupTest.SMTP);
 
     @Autowired
     private RenovacionService renovacionService;
@@ -57,8 +51,23 @@ class RenovacionServiceIntegrationTest {
     @Autowired
     private TokenDominioRepository tokenDominioRepository;
 
+    @Autowired
+    private HistorialDominioRepository historialDominioRepository;
+
+    @DynamicPropertySource
+    static void properties(DynamicPropertyRegistry registry) {
+        registry.add("renovacion.umbrales", () -> "30,15,5,1");
+
+        registry.add("app.url.renovacion", () -> "http://localhost/renovacion/");
+
+        registry.add("spring.mail.username", () -> "test@solunet.es");
+
+        registry.add("app.email.admin", () -> "admin@solunet.es");
+    }
+
     @BeforeEach
     void limpiarDatos() throws FolderException {
+        historialDominioRepository.deleteAll();
         tokenDominioRepository.deleteAll();
         tokenClienteRepository.deleteAll();
         dominioRepository.deleteAll();
@@ -67,66 +76,8 @@ class RenovacionServiceIntegrationTest {
         greenMail.purgeEmailFromAllMailboxes();
     }
 
-    @DynamicPropertySource
-    static void properties(DynamicPropertyRegistry registry) {
-        registry.add(
-                "renovacion.umbrales",
-                () -> "30,15,5,1"
-        );
-
-        registry.add(
-                "app.url.renovacion",
-                () -> "http://localhost/renovacion/"
-        );
-
-        registry.add(
-                "spring.mail.username",
-                () -> "test@solunet.es"
-        );
-
-        registry.add(
-                "app.email.admin",
-                () -> "admin@solunet.es"
-        );
-    }
-
-    @TestConfiguration
-    static class MailTestConfiguration {
-
-        @Bean
-        @Primary
-        JavaMailSenderImpl testMailSender() {
-
-            JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
-
-            mailSender.setHost("localhost");
-            mailSender.setPort(ServerSetupTest.SMTP.getPort());
-            mailSender.setUsername("test@solunet.es");
-
-            Properties properties = mailSender.getJavaMailProperties();
-
-            properties.setProperty(
-                    "mail.smtp.auth",
-                    "false"
-            );
-
-            properties.setProperty(
-                    "mail.smtp.starttls.enable",
-                    "false"
-            );
-
-            properties.setProperty(
-                    "mail.smtp.starttls.required",
-                    "false"
-            );
-
-            return mailSender;
-        }
-    }
-
     @Test
-    void procesarAvisos_flujoCompleto_debeCrearTokenActualizarDominioYEnviarCorreos()
-            throws Exception {
+    void procesarAvisos_flujoCompleto_debeCrearTokenActualizarDominioYEnviarCorreos() throws Exception {
 
         // ---------------------------------------------------------
         // ARRANGE
@@ -136,21 +87,17 @@ class RenovacionServiceIntegrationTest {
         cliente.setNombre("Ana");
         cliente.setEmail("ana@cliente.com");
 
-        Cliente clienteGuardado =
-                clienteRepository.saveAndFlush(cliente);
+        Cliente clienteGuardado = clienteRepository.saveAndFlush(cliente);
 
         Dominio dominio = new Dominio();
 
         dominio.setCliente(clienteGuardado);
         dominio.setNombreDominio("ana.com");
         dominio.setEstado(Estado.ACTIVO);
-        dominio.setFechaExpiracion(
-                LocalDate.now().plusDays(20)
-        );
+        dominio.setFechaExpiracion(LocalDate.now().plusDays(20));
         dominio.setRegistrador(Registrador.DOMITECA);
 
-        Dominio dominioGuardado =
-                dominioRepository.saveAndFlush(dominio);
+        Dominio dominioGuardado = dominioRepository.saveAndFlush(dominio);
 
         // ---------------------------------------------------------
         // ACT
@@ -162,65 +109,45 @@ class RenovacionServiceIntegrationTest {
         // ASSERT - DOMINIO
         // ---------------------------------------------------------
 
-        Dominio dominioActualizado =
-                dominioRepository
-                        .findById(dominioGuardado.getId())
-                        .orElseThrow();
+        Dominio dominioActualizado = dominioRepository.findById(dominioGuardado.getId()).orElseThrow();
 
-        assertThat(dominioActualizado.getEstado())
-                .isEqualTo(Estado.AVISO_ENVIADO);
+        assertThat(dominioActualizado.getEstado()).isEqualTo(Estado.AVISO_ENVIADO);
 
-        assertThat(dominioActualizado.getUltimoUmbralAvisado())
-                .isEqualTo(30);
+        assertThat(dominioActualizado.getUltimoUmbralAvisado()).isEqualTo(30);
 
-        assertThat(dominioActualizado.getUltimoAviso())
-                .isEqualTo(LocalDate.now());
+        assertThat(dominioActualizado.getUltimoAviso()).isEqualTo(LocalDate.now());
 
         // ---------------------------------------------------------
         // ASSERT - TOKEN CLIENTE
         // ---------------------------------------------------------
 
-        List<TokenCliente> tokens =
-                tokenClienteRepository.findAll();
+        List<TokenCliente> tokens = tokenClienteRepository.findAll();
 
-        assertThat(tokens)
-                .hasSize(1);
+        assertThat(tokens).hasSize(1);
 
-        TokenCliente tokenCliente =
-                tokens.get(0);
+        TokenCliente tokenCliente = tokens.getFirst();
 
-        assertThat(tokenCliente.getToken())
-                .isNotBlank();
+        assertThat(tokenCliente.getToken()).isNotBlank();
 
-        assertThat(tokenCliente.isUsado())
-                .isFalse();
+        assertThat(tokenCliente.isUsado()).isFalse();
 
-        assertThat(tokenCliente.getFechaCreacion())
-                .isNotNull();
+        assertThat(tokenCliente.getFechaCreacion()).isNotNull();
 
-        assertThat(tokenCliente.getFechaExpiracion())
-                .isNotNull();
+        assertThat(tokenCliente.getFechaExpiracion()).isNotNull();
 
         // ---------------------------------------------------------
         // ASSERT - TOKEN DOMINIO
         // ---------------------------------------------------------
 
-        TokenDominio tokenDominio =
-                tokenDominioRepository
-                        .findByDominio(dominioGuardado)
-                        .orElseThrow();
+        TokenDominio tokenDominio = tokenDominioRepository.findByDominio(dominioGuardado).orElseThrow();
 
-        assertThat(tokenDominio.getEstadoAvisoRenovacion())
-                .isEqualTo(
-                        EstadoAvisoRenovacion.PENDIENTE
-                );
+        assertThat(tokenDominio.getEstadoAvisoRenovacion()).isEqualTo(EstadoAvisoRenovacion.PENDIENTE);
 
         // ---------------------------------------------------------
         // ASSERT - CORREOS
         // ---------------------------------------------------------
 
-        Message[] mensajes =
-                greenMail.getReceivedMessages();
+        Message[] mensajes = greenMail.getReceivedMessages();
 
         /*
          * Se esperan dos correos:
@@ -228,72 +155,55 @@ class RenovacionServiceIntegrationTest {
          * 1. Aviso al cliente
          * 2. Informe al administrador
          */
-        assertThat(mensajes)
-                .hasSize(2);
+        assertThat(mensajes).hasSize(2);
 
         // ---------------------------------------------------------
         // ASSERT - CORREO CLIENTE
         // ---------------------------------------------------------
 
-        Message emailCliente =
-                buscarMensajePorDestinatario(
-                        mensajes,
-                        "ana@cliente.com"
-                );
+        Message emailCliente = buscarMensajePorDestinatario(mensajes, "ana@cliente.com");
 
-        assertThat(emailCliente)
-                .isNotNull();
+        assertThat(emailCliente).isNotNull();
 
-        assertThat(emailCliente.getSubject())
-                .contains(
-                        "Dominios próximos a expirar"
-                );
+        assertThat(emailCliente.getSubject()).contains("Dominios próximos a expirar");
 
-        String contenidoCliente =
-                obtenerContenidoTexto(emailCliente
-                );
+        String contenidoCliente = obtenerContenidoTexto(emailCliente);
 
-        assertThat(contenidoCliente)
-                .contains("ana.com");
+        assertThat(contenidoCliente).contains("ana.com");
 
-        assertThat(contenidoCliente)
-                .contains(
-                        "http://localhost/renovacion/"
-                );
+        assertThat(contenidoCliente).contains("http://localhost/renovacion/");
 
         // ---------------------------------------------------------
         // ASSERT - CORREO ADMINISTRADOR
         // ---------------------------------------------------------
 
-        Message emailAdministrador =
-                buscarMensajePorDestinatario(
-                        mensajes,
-                        "admin@solunet.es"
-                );
+        Message emailAdministrador = buscarMensajePorDestinatario(mensajes, "admin@solunet.es");
 
-        assertThat(emailAdministrador)
-                .isNotNull();
+        assertThat(emailAdministrador).isNotNull();
 
-        assertThat(emailAdministrador.getSubject())
-                .contains(
-                        "Informe de avisos de renovación dominios"
-                );
+        assertThat(emailAdministrador.getSubject()).contains("Informe de avisos de renovación dominios");
 
-        String contenidoAdministrador =
-                obtenerContenidoTexto(emailAdministrador);
+        String contenidoAdministrador = obtenerContenidoTexto(emailAdministrador);
 
-        assertThat(contenidoAdministrador)
-                .isNotBlank();
+        assertThat(contenidoAdministrador).isNotBlank();
+
+        // ---------------------------------------------------------
+        // ASSERT - HISTORIALES
+        // ---------------------------------------------------------
+        List<HistorialDominio> historiales = historialDominioRepository.findByDominioOrderByFechaDesc(dominioGuardado);
+
+
+        assertThat(historiales).hasSize(1);
+        assertThat(historiales.getFirst().getTipoEvento()).isEqualTo(TipoEventoDominio.AVISO_RENOVACION_ENVIADO);
+        assertThat(historiales.getFirst().getDominio().getId()).isEqualTo(dominioGuardado.getId());
+        assertThat(historiales.getFirst().getFecha()).isNotNull();
     }
 
     /**
      * Busca dentro de los mensajes recibidos aquel cuyo destinatario
      * coincida con el correo indicado.
      */
-    private Message buscarMensajePorDestinatario(
-            Message[] mensajes,
-            String email
-    ) throws Exception {
+    private Message buscarMensajePorDestinatario(Message[] mensajes, String email) throws Exception {
 
         for (Message mensaje : mensajes) {
 
@@ -301,12 +211,9 @@ class RenovacionServiceIntegrationTest {
                 continue;
             }
 
-            for (var destinatario :
-                    mensaje.getAllRecipients()) {
+            for (var destinatario : mensaje.getAllRecipients()) {
 
-                if (destinatario
-                        .toString()
-                        .equalsIgnoreCase(email)) {
+                if (destinatario.toString().equalsIgnoreCase(email)) {
 
                     return mensaje;
                 }
@@ -328,11 +235,9 @@ class RenovacionServiceIntegrationTest {
 
             for (int i = 0; i < multipart.getCount(); i++) {
 
-                jakarta.mail.BodyPart parte =
-                        multipart.getBodyPart(i);
+                jakarta.mail.BodyPart parte = multipart.getBodyPart(i);
 
-                Object contenidoParte =
-                        parte.getContent();
+                Object contenidoParte = parte.getContent();
 
                 if (contenidoParte instanceof String texto) {
                     return texto;
@@ -341,10 +246,7 @@ class RenovacionServiceIntegrationTest {
                 if (contenidoParte instanceof jakarta.mail.Multipart subMultipart) {
                     for (int j = 0; j < subMultipart.getCount(); j++) {
 
-                        Object contenidoSubParte =
-                                subMultipart
-                                        .getBodyPart(j)
-                                        .getContent();
+                        Object contenidoSubParte = subMultipart.getBodyPart(j).getContent();
 
                         if (contenidoSubParte instanceof String texto) {
                             return texto;
@@ -355,5 +257,30 @@ class RenovacionServiceIntegrationTest {
         }
 
         return "";
+    }
+
+    @TestConfiguration
+    static class MailTestConfiguration {
+
+        @Bean
+        @Primary
+        JavaMailSenderImpl testMailSender() {
+
+            JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
+
+            mailSender.setHost("localhost");
+            mailSender.setPort(ServerSetupTest.SMTP.getPort());
+            mailSender.setUsername("test@solunet.es");
+
+            Properties properties = mailSender.getJavaMailProperties();
+
+            properties.setProperty("mail.smtp.auth", "false");
+
+            properties.setProperty("mail.smtp.starttls.enable", "false");
+
+            properties.setProperty("mail.smtp.starttls.required", "false");
+
+            return mailSender;
+        }
     }
 }
