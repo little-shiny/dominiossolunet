@@ -128,7 +128,6 @@ public class RenovacionService {
 
             if (resultado.isEnviado()) {
                 marcarComoAvisado(dominios, hoy, ahora);
-                //todo historial
             } else {
                 erroresEnvio.add(new ErrorEnvioEmail(cliente, dominios, resultado.getMensajeError()));
             }
