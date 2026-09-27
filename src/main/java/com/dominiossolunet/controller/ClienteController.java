@@ -24,10 +24,9 @@ public class ClienteController {
     @GetMapping
     public String listarClientes(Model model) {
 
-        List<Cliente> clientes =
-                clienteService.obtenerTodosLosClientes();
-
-        model.addAttribute("clientes", clientes);
+        model.addAttribute(
+                "clientes",
+                clienteService.obtenerResumenClientes());
 
         return "gestion/clientes";
     }
