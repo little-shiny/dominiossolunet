@@ -8,6 +8,7 @@ import com.dominiossolunet.model.enums.TipoEventoDominio;
 import com.dominiossolunet.repository.HistorialDominioRepository;
 import com.dominiossolunet.repository.TokenClienteRepository;
 import com.dominiossolunet.repository.TokenDominioRepository;
+import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -143,12 +144,14 @@ public class TokenService {
 
 
     @Transactional
-    public void procesarConfirmacion(TokenCliente token, List<Integer> idsDominiosMarcados) {
+    public void procesarConfirmacion(
+            TokenCliente token,
+            List<Integer> idsDominiosMarcados) {
 
         HashSet<Integer> setTokens = new HashSet<>(idsDominiosMarcados);
 
-        // obtener la lista de TokenDominio asociada a ese Tokencliente
-        List<TokenDominio> tokenDominioList = obtenerTokenDominioPorTokenCliente(token);
+        List<TokenDominio> tokenDominioList =
+                obtenerTokenDominioPorTokenCliente(token);
 
         for (TokenDominio td : tokenDominioList) {
 
@@ -156,24 +159,39 @@ public class TokenService {
 
             td.setFechaInteraccionCliente(ahora);
 
-            boolean marcadoRenovar = setTokens.contains(td.getDominio().getId());
+            boolean marcadoRenovar =
+                    setTokens.contains(td.getDominio().getId());
 
-            EstadoAvisoRenovacion estado = marcadoRenovar ? EstadoAvisoRenovacion.CONFIRMADO : EstadoAvisoRenovacion.RECHAZADO;
+            EstadoAvisoRenovacion estado =
+                    marcadoRenovar
+                            ? EstadoAvisoRenovacion.CONFIRMADO
+                            : EstadoAvisoRenovacion.RECHAZADO;
+
             td.setEstadoAvisoRenovacion(estado);
 
-            //Registra los datos en el historial
-            HistorialDominio historial = new HistorialDominio();
-            historial.setDominio(td.getDominio());
-            historial.setFecha(ahora);
-            historial.setDetalle("Respuesta registrada desde el formulario de renovación");
+            HistorialDominio historial = getHistorialDominio(td, ahora, marcadoRenovar);
 
-            historial.setTipoEvento(marcadoRenovar ? TipoEventoDominio.CLIENTE_ACEPTA_RENOVACION : TipoEventoDominio.CLIENTE_RECHAZA_RENOVACION);
             historialDominioRepository.save(historial);
-
-
         }
 
         marcarComoUsado(token.getToken());
+    }
+
+    @Nonnull
+    private static HistorialDominio getHistorialDominio(TokenDominio td, LocalDateTime ahora, boolean marcadoRenovar) {
+        HistorialDominio historial = new HistorialDominio();
+        historial.setDominio(td.getDominio());
+        historial.setFecha(ahora);
+        historial.setDetalle(
+                "Respuesta registrada desde el formulario de renovación"
+        );
+
+        historial.setTipoEvento(
+                marcadoRenovar
+                        ? TipoEventoDominio.CLIENTE_ACEPTA_RENOVACION
+                        : TipoEventoDominio.CLIENTE_RECHAZA_RENOVACION
+        );
+        return historial;
     }
 }
 
