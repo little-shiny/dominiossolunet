@@ -208,8 +208,6 @@ public class GestionDominioController {
 
         boolean puedeRenovar = gestionDominioService.puedeMarcarComoRenovado(id);
 
-        model.addAttribute("puedeRenovar", puedeRenovar);
-
         model.addAttribute("dominio", dominio);
         model.addAttribute("historial", historial);
         model.addAttribute("facturacion", facturacion.orElse(null));
