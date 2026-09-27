@@ -17,6 +17,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -48,299 +49,217 @@ class GestionDominioServiceTest {
         dominio = new Dominio();
 
         dominio.setNombreDominio("ejemplo.com");
-        dominio.setEstadoRenovacion(
-                EstadoRenovacion.PENDIENTE_RENOVACION
-        );
+        dominio.setEstadoRenovacion(EstadoRenovacion.PENDIENTE_RENOVACION);
 
         tokenDominio = new TokenDominio();
 
         tokenDominio.setDominio(dominio);
-        tokenDominio.setEstadoAvisoRenovacion(
-                EstadoAvisoRenovacion.CONFIRMADO
-        );
+        tokenDominio.setEstadoAvisoRenovacion(EstadoAvisoRenovacion.CONFIRMADO);
     }
 
     @Test
     void marcarComoRenovado_dominioConfirmado_loMarcaComoRenovado() {
 
-        when(dominioRepository.findById(1))
-                .thenReturn(Optional.of(dominio));
+        when(dominioRepository.findById(1)).thenReturn(Optional.of(dominio));
 
-        when(tokenDominioRepository
-                .findFirstByDominioOrderByIdDesc(dominio))
-                .thenReturn(Optional.of(tokenDominio));
+        when(tokenDominioRepository.findFirstByDominioOrderByIdDesc(dominio)).thenReturn(Optional.of(tokenDominio));
 
         gestionDominioService.marcarComoRenovado(1);
 
-        assertThat(dominio.getEstadoRenovacion())
-                .isEqualTo(EstadoRenovacion.RENOVADO);
+        assertThat(dominio.getEstadoRenovacion()).isEqualTo(EstadoRenovacion.RENOVADO);
 
-        verify(dominioRepository)
-                .save(dominio);
+        verify(dominioRepository).save(dominio);
 
-        verify(historialDominioRepository)
-                .save(any(HistorialDominio.class));
+        verify(historialDominioRepository).save(any(HistorialDominio.class));
     }
 
     @Test
     void marcarComoRenovado_guardaHistorialCorrectamente() {
 
-        when(dominioRepository.findById(1))
-                .thenReturn(Optional.of(dominio));
+        when(dominioRepository.findById(1)).thenReturn(Optional.of(dominio));
 
-        when(tokenDominioRepository
-                .findFirstByDominioOrderByIdDesc(dominio))
-                .thenReturn(Optional.of(tokenDominio));
+        when(tokenDominioRepository.findFirstByDominioOrderByIdDesc(dominio)).thenReturn(Optional.of(tokenDominio));
 
         gestionDominioService.marcarComoRenovado(1);
 
-        ArgumentCaptor<HistorialDominio> captor =
-                ArgumentCaptor.forClass(HistorialDominio.class);
+        ArgumentCaptor<HistorialDominio> captor = ArgumentCaptor.forClass(HistorialDominio.class);
 
-        verify(historialDominioRepository)
-                .save(captor.capture());
+        verify(historialDominioRepository).save(captor.capture());
 
-        HistorialDominio historial =
-                captor.getValue();
+        HistorialDominio historial = captor.getValue();
 
-        assertThat(historial.getDominio())
-                .isEqualTo(dominio);
+        assertThat(historial.getDominio()).isEqualTo(dominio);
 
-        assertThat(historial.getTipoEvento())
-                .isEqualTo(
-                        TipoEventoDominio.RENOVACION_REALIZADA
-                );
+        assertThat(historial.getTipoEvento()).isEqualTo(TipoEventoDominio.RENOVACION_REALIZADA);
 
-        assertThat(historial.getDetalle())
-                .isEqualTo(
-                        "Renovación realizada en el registrador"
-                );
+        assertThat(historial.getDetalle()).isEqualTo("Renovación realizada en el registrador");
 
-        assertThat(historial.getFecha())
-                .isNotNull();
+        assertThat(historial.getFecha()).isNotNull();
     }
 
     @Test
     void marcarComoRenovado_dominioNoExiste_lanzaExcepcion() {
 
-        when(dominioRepository.findById(1))
-                .thenReturn(Optional.empty());
+        when(dominioRepository.findById(1)).thenReturn(Optional.empty());
 
-        IllegalArgumentException exception =
-                assertThrows(
-                        IllegalArgumentException.class,
-                        () -> gestionDominioService.marcarComoRenovado(1)
-                );
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> gestionDominioService.marcarComoRenovado(1));
 
-        assertThat(exception.getMessage())
-                .isEqualTo(
-                        "Dominio no encontrado: 1"
-                );
+        assertThat(exception.getMessage()).isEqualTo("Dominio no encontrado: 1");
 
-        verify(dominioRepository)
-                .findById(1);
+        verify(dominioRepository).findById(1);
 
-        verifyNoInteractions(
-                tokenDominioRepository,
-                historialDominioRepository
-        );
+        verifyNoInteractions(tokenDominioRepository, historialDominioRepository);
     }
 
     @Test
     void marcarComoRenovado_dominioYaRenovado_lanzaExcepcion() {
 
-        dominio.setEstadoRenovacion(
-                EstadoRenovacion.RENOVADO
-        );
+        dominio.setEstadoRenovacion(EstadoRenovacion.RENOVADO);
 
-        when(dominioRepository.findById(1))
-                .thenReturn(Optional.of(dominio));
+        when(dominioRepository.findById(1)).thenReturn(Optional.of(dominio));
 
-        IllegalStateException exception =
-                assertThrows(
-                        IllegalStateException.class,
-                        () -> gestionDominioService.marcarComoRenovado(1)
-                );
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> gestionDominioService.marcarComoRenovado(1));
 
-        assertThat(exception.getMessage())
-                .contains(
-                        "El dominio ya está marcado como renovado"
-                );
+        assertThat(exception.getMessage()).contains("El dominio ya está marcado como renovado");
 
-        verify(dominioRepository, never())
-                .save(any(Dominio.class));
+        verify(dominioRepository, never()).save(any(Dominio.class));
 
-        verifyNoInteractions(
-                tokenDominioRepository,
-                historialDominioRepository
-        );
+        verifyNoInteractions(tokenDominioRepository, historialDominioRepository);
     }
 
     @Test
     void marcarComoRenovado_dominioRechazado_lanzaExcepcion() {
 
-        dominio.setEstadoRenovacion(
-                EstadoRenovacion.RECHAZADO
-        );
+        dominio.setEstadoRenovacion(EstadoRenovacion.RECHAZADO);
 
-        when(dominioRepository.findById(1))
-                .thenReturn(Optional.of(dominio));
+        when(dominioRepository.findById(1)).thenReturn(Optional.of(dominio));
 
-        IllegalStateException exception =
-                assertThrows(
-                        IllegalStateException.class,
-                        () -> gestionDominioService.marcarComoRenovado(1)
-                );
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> gestionDominioService.marcarComoRenovado(1));
 
-        assertThat(exception.getMessage())
-                .contains(
-                        "El cliente ha rechazado la renovación"
-                );
+        assertThat(exception.getMessage()).contains("El cliente ha rechazado la renovación");
 
-        verify(dominioRepository, never())
-                .save(any(Dominio.class));
+        verify(dominioRepository, never()).save(any(Dominio.class));
 
-        verifyNoInteractions(
-                tokenDominioRepository,
-                historialDominioRepository
-        );
+        verifyNoInteractions(tokenDominioRepository, historialDominioRepository);
     }
 
     @Test
     void marcarComoRenovado_sinRespuestaDeRenovacion_lanzaExcepcion() {
 
-        when(dominioRepository.findById(1))
-                .thenReturn(Optional.of(dominio));
+        when(dominioRepository.findById(1)).thenReturn(Optional.of(dominio));
 
-        when(tokenDominioRepository
-                .findFirstByDominioOrderByIdDesc(dominio))
-                .thenReturn(Optional.empty());
+        when(tokenDominioRepository.findFirstByDominioOrderByIdDesc(dominio)).thenReturn(Optional.empty());
 
-        IllegalStateException exception =
-                assertThrows(
-                        IllegalStateException.class,
-                        () -> gestionDominioService.marcarComoRenovado(1)
-                );
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> gestionDominioService.marcarComoRenovado(1));
 
-        assertThat(exception.getMessage())
-                .contains(
-                        "El dominio no tiene ninguna respuesta de renovación"
-                );
+        assertThat(exception.getMessage()).contains("El dominio no tiene ninguna respuesta de renovación");
 
-        verify(dominioRepository, never())
-                .save(any(Dominio.class));
+        verify(dominioRepository, never()).save(any(Dominio.class));
 
-        verifyNoInteractions(
-                historialDominioRepository
-        );
+        verifyNoInteractions(historialDominioRepository);
     }
 
     @Test
     void marcarComoRenovado_clienteNoHaConfirmado_lanzaExcepcion() {
 
-        tokenDominio.setEstadoAvisoRenovacion(
-                EstadoAvisoRenovacion.PENDIENTE
-        );
+        tokenDominio.setEstadoAvisoRenovacion(EstadoAvisoRenovacion.PENDIENTE);
 
-        when(dominioRepository.findById(1))
-                .thenReturn(Optional.of(dominio));
+        when(dominioRepository.findById(1)).thenReturn(Optional.of(dominio));
 
-        when(tokenDominioRepository
-                .findFirstByDominioOrderByIdDesc(dominio))
-                .thenReturn(Optional.of(tokenDominio));
+        when(tokenDominioRepository.findFirstByDominioOrderByIdDesc(dominio)).thenReturn(Optional.of(tokenDominio));
 
-        IllegalStateException exception =
-                assertThrows(
-                        IllegalStateException.class,
-                        () -> gestionDominioService.marcarComoRenovado(1)
-                );
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> gestionDominioService.marcarComoRenovado(1));
 
-        assertThat(exception.getMessage())
-                .contains(
-                        "El cliente no ha confirmado la renovación"
-                );
+        assertThat(exception.getMessage()).contains("El cliente no ha confirmado la renovación");
 
-        verify(dominioRepository, never())
-                .save(any(Dominio.class));
+        verify(dominioRepository, never()).save(any(Dominio.class));
 
-        verifyNoInteractions(
-                historialDominioRepository
-        );
+        verifyNoInteractions(historialDominioRepository);
     }
 
     @Test
     void marcarComoRenovado_clienteRechazo_lanzaExcepcion() {
 
-        tokenDominio.setEstadoAvisoRenovacion(
-                EstadoAvisoRenovacion.RECHAZADO
-        );
+        tokenDominio.setEstadoAvisoRenovacion(EstadoAvisoRenovacion.RECHAZADO);
 
-        when(dominioRepository.findById(1))
-                .thenReturn(Optional.of(dominio));
+        when(dominioRepository.findById(1)).thenReturn(Optional.of(dominio));
 
-        when(tokenDominioRepository
-                .findFirstByDominioOrderByIdDesc(dominio))
-                .thenReturn(Optional.of(tokenDominio));
+        when(tokenDominioRepository.findFirstByDominioOrderByIdDesc(dominio)).thenReturn(Optional.of(tokenDominio));
 
-        IllegalStateException exception =
-                assertThrows(
-                        IllegalStateException.class,
-                        () -> gestionDominioService.marcarComoRenovado(1)
-                );
+        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> gestionDominioService.marcarComoRenovado(1));
 
-        assertThat(exception.getMessage())
-                .contains(
-                        "El cliente no ha confirmado la renovación"
-                );
+        assertThat(exception.getMessage()).contains("El cliente no ha confirmado la renovación");
 
-        verify(dominioRepository, never())
-                .save(any(Dominio.class));
+        verify(dominioRepository, never()).save(any(Dominio.class));
 
-        verifyNoInteractions(
-                historialDominioRepository
-        );
+        verifyNoInteractions(historialDominioRepository);
     }
 
     @Test
     void marcarComoRenovado_renovacionCorrecta_soloModificaEstadoRenovacion() {
 
-        when(dominioRepository.findById(1))
-                .thenReturn(Optional.of(dominio));
+        when(dominioRepository.findById(1)).thenReturn(Optional.of(dominio));
 
-        when(tokenDominioRepository
-                .findFirstByDominioOrderByIdDesc(dominio))
-                .thenReturn(Optional.of(tokenDominio));
+        when(tokenDominioRepository.findFirstByDominioOrderByIdDesc(dominio)).thenReturn(Optional.of(tokenDominio));
 
         gestionDominioService.marcarComoRenovado(1);
 
-        assertThat(dominio.getEstadoRenovacion())
-                .isEqualTo(
-                        EstadoRenovacion.RENOVADO
-                );
+        assertThat(dominio.getEstadoRenovacion()).isEqualTo(EstadoRenovacion.RENOVADO);
 
-        verify(dominioRepository)
-                .save(dominio);
+        verify(dominioRepository).save(dominio);
 
-        verify(historialDominioRepository)
-                .save(any(HistorialDominio.class));
+        verify(historialDominioRepository).save(any(HistorialDominio.class));
     }
 
     @Test
     void marcarComoRenovado_noCreaHistorialSiNoSePuedeRenovar() {
 
-        dominio.setEstadoRenovacion(
-                EstadoRenovacion.RECHAZADO
-        );
+        dominio.setEstadoRenovacion(EstadoRenovacion.RECHAZADO);
 
-        when(dominioRepository.findById(1))
-                .thenReturn(Optional.of(dominio));
+        when(dominioRepository.findById(1)).thenReturn(Optional.of(dominio));
 
-        assertThrows(
-                IllegalStateException.class,
-                () -> gestionDominioService.marcarComoRenovado(1)
-        );
+        assertThrows(IllegalStateException.class, () -> gestionDominioService.marcarComoRenovado(1));
 
-        verify(historialDominioRepository, never())
-                .save(any(HistorialDominio.class));
+        verify(historialDominioRepository, never()).save(any(HistorialDominio.class));
+    }
+
+    @Test
+    void obtenerTodosLosDominios_devuelveTodosLosDominios() {
+
+        // ARRANGE
+        Dominio dominio1 = new Dominio();
+        dominio1.setId(1);
+        dominio1.setNombreDominio("ejemplo.com");
+
+        Dominio dominio2 = new Dominio();
+        dominio2.setId(2);
+        dominio2.setNombreDominio("ejemplo.es");
+
+        List<Dominio> dominios = List.of(dominio1, dominio2);
+
+        when(dominioRepository.findAll()).thenReturn(dominios);
+
+        // ACT
+        List<Dominio> resultado = gestionDominioService.obtenerTodosLosDominios();
+
+        // ASSERT
+        assertThat(resultado).containsExactly(dominio1, dominio2);
+
+        verify(dominioRepository).findAll();
+    }
+
+    @Test
+    void obtenerTodosLosDominios_sinDominios_devuelveListaVacia() {
+
+        // ARRANGE
+        when(dominioRepository.findAll()).thenReturn(List.of());
+
+        // ACT
+        List<Dominio> resultado = gestionDominioService.obtenerTodosLosDominios();
+
+        // ASSERT
+        assertThat(resultado).isEmpty();
+
+        verify(dominioRepository).findAll();
     }
 }
