@@ -1,65 +1,194 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="es">
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Clientes</title>
 
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
             margin: 0;
-            background: #f5f6fa;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            color: #1f2937;
         }
 
         header {
-            background: #222;
-            color: white;
-            padding: 20px 30px;
+            background: #111827;
+            color: #fff;
+            padding: 22px 30px;
+        }
+
+        header .bar {
+            max-width: 1500px;
+            margin: auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
         }
 
         nav a {
-            color: white;
-            margin-right: 20px;
+            color: #d1d5db;
             text-decoration: none;
+            margin-left: 18px;
+            font-size: 14px;
+        }
+
+        nav a:hover {
+            color: #fff;
         }
 
         main {
-            padding: 30px;
+            max-width: 1500px;
+            margin: 30px auto;
+            padding: 0 20px;
         }
 
-        h1 {
-            margin-bottom: 25px;
+        .panel {
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .07);
+            overflow: hidden;
+        }
+
+        .head {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .head h2 {
+            margin: 0 0 5px;
+        }
+
+        .head p {
+            margin: 0;
+            color: #6b7280;
+        }
+
+        .summary {
+            padding: 12px 20px;
+            color: #6b7280;
+            font-size: 13px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
         }
 
         th,
         td {
-            padding: 14px;
-            border-bottom: 1px solid #ddd;
+            padding: 13px 14px;
+            border-bottom: 1px solid #e5e7eb;
             text-align: left;
+            white-space: nowrap;
+            font-size: 13px;
         }
 
         th {
-            background: #f0f0f0;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: #6b7280;
+            background: #f9fafb;
         }
 
-        tr:hover {
-            background: #fafafa;
+        .client {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
         }
 
-        .button {
+        .client-name {
+            font-weight: 700;
+            color: #2563eb;
+        }
+
+        .email {
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .badge {
             display: inline-block;
-            padding: 7px 12px;
-            background: #222;
-            color: white;
-            text-decoration: none;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .active,
+        .renewed {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .warning,
+        .pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .danger,
+        .rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .neutral {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .action-btn {
+            background: #2563eb;
+            color: #fff;
+            border: 0;
             border-radius: 5px;
+            padding: 7px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .action-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .empty {
+            padding: 50px 20px;
+            text-align: center;
+            color: #6b7280;
+        }
+
+        @media (max-width: 900px) {
+
+            header .bar {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            nav a {
+                margin-left: 0;
+                margin-right: 18px;
+            }
         }
     </style>
 </head>
@@ -68,82 +197,263 @@
 
 <header>
 
-    <h2>Gestión de dominios</h2>
+    <div class="bar">
 
-    <nav>
-        <a th:href="@{/gestion/dashboard}">
-            Dashboard
-        </a>
+        <h1>Gestión de dominios</h1>
 
-        <a th:href="@{/gestion/dominios}">
-            Dominios
-        </a>
+        <nav>
 
-        <a th:href="@{/gestion/clientes}">
-            Clientes
-        </a>
-    </nav>
+            <a th:href="@{/gestion/dashboard}">
+                Dashboard
+            </a>
+
+            <a th:href="@{/gestion/dominios}">
+                Dominios
+            </a>
+
+            <a th:href="@{/gestion/clientes}">
+                Clientes
+            </a>
+
+        </nav>
+
+    </div>
 
 </header>
 
+
 <main>
 
-    <h1>Clientes</h1>
+    <section class="panel">
 
-    <table>
+        <div class="head">
 
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Cliente</th>
-            <th>Email</th>
-            <th>Dominios</th>
-            <th>Acciones</th>
-        </tr>
-        </thead>
+            <h2>Clientes</h2>
 
-        <tbody>
+            <p>
+                Consulta los clientes y el estado de sus dominios,
+                renovaciones y facturación.
+            </p>
 
-        <tr th:each="cliente : ${clientes}">
+        </div>
 
-            <td th:text="${cliente.id}">
-                1
-            </td>
 
-            <td th:text="${cliente.nombre}">
-                Cliente ejemplo
-            </td>
+        <!-- RESUMEN -->
 
-            <td th:text="${cliente.email}">
-                cliente@example.com
-            </td>
+        <div class="summary">
 
-            <td th:text="${cliente.dominios != null ? cliente.dominios.size() : 0}">
-                0
-            </td>
+            <span
+                    th:text="${#lists.size(clientes)}
+                    + ' clientes encontrados'">
 
-            <td>
+                0 clientes encontrados
 
-                <a class="button"
-                   th:href="@{/gestion/clientes/{id}(id=${cliente.id})}">
-                    Ver cliente
-                </a>
+            </span>
 
-            </td>
+        </div>
 
-        </tr>
 
-        <tr th:if="${#lists.isEmpty(clientes)}">
+        <!-- SIN RESULTADOS -->
 
-            <td colspan="5">
-                No hay clientes registrados.
-            </td>
+        <div
+                th:if="${#lists.isEmpty(clientes)}"
+                class="empty">
 
-        </tr>
+            No hay clientes registrados.
 
-        </tbody>
+        </div>
 
-    </table>
+
+        <!-- TABLA -->
+
+        <div
+                th:unless="${#lists.isEmpty(clientes)}"
+                class="table-wrap">
+
+            <table>
+
+                <thead>
+
+                <tr>
+
+                    <th>
+                        Cliente
+                    </th>
+
+                    <th>
+                        Email
+                    </th>
+
+                    <th>
+                        Dominios
+                    </th>
+
+                    <th>
+                        Pendientes renovación
+                    </th>
+
+                    <th>
+                        Renovados
+                    </th>
+
+                    <th>
+                        Rechazados
+                    </th>
+
+                    <th>
+                        Pendientes facturación
+                    </th>
+
+                    <th>
+                        Acción
+                    </th>
+
+                </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                <tr
+                        th:each="resumen : ${clientes}">
+
+                    <!-- CLIENTE -->
+
+                    <td>
+
+                        <a
+                                class="client-name"
+                                th:href="@{'/gestion/clientes/' + ${resumen.cliente.id}}"
+                                th:text="${resumen.cliente.nombre}">
+
+                            Cliente
+
+                        </a>
+
+                    </td>
+
+
+                    <!-- EMAIL -->
+
+                    <td
+                            th:text="${resumen.cliente.email}">
+
+                        email@example.com
+
+                    </td>
+
+
+                    <!-- DOMINIOS -->
+
+                    <td>
+
+                        <span
+                                class="badge neutral"
+                                th:text="${resumen.totalDominios}">
+
+                            0
+
+                        </span>
+
+                    </td>
+
+
+                    <!-- PENDIENTES RENOVACION -->
+
+                    <td>
+
+                        <span
+                                class="badge"
+                                th:classappend="${
+                                resumen.pendientesRenovacion > 0
+                            } ? ' pending' : ' neutral'"
+                                th:text="${resumen.pendientesRenovacion}">
+
+                            0
+
+                        </span>
+
+                    </td>
+
+
+                    <!-- RENOVADOS -->
+
+                    <td>
+
+                        <span
+                                class="badge"
+                                th:classappend="${
+                                resumen.renovados > 0
+                            } ? ' renewed' : ' neutral'"
+                                th:text="${resumen.renovados}">
+
+                            0
+
+                        </span>
+
+                    </td>
+
+
+                    <!-- RECHAZADOS -->
+
+                    <td>
+
+                        <span
+                                class="badge"
+                                th:classappend="${
+                                resumen.rechazados > 0
+                            } ? ' rejected' : ' neutral'"
+                                th:text="${resumen.rechazados}">
+
+                            0
+
+                        </span>
+
+                    </td>
+
+
+                    <!-- PENDIENTES FACTURACION -->
+
+                    <td>
+
+                        <span
+                                class="badge"
+                                th:classappend="${
+                                resumen.pendientesFacturacion > 0
+                            } ? ' pending' : ' neutral'"
+                                th:text="${resumen.pendientesFacturacion}">
+
+                            0
+
+                        </span>
+
+                    </td>
+
+
+                    <!-- ACCION -->
+
+                    <td>
+
+                        <a
+                                class="action-btn"
+                                th:href="@{'/gestion/clientes/' + ${resumen.cliente.id}}">
+
+                            Ver cliente
+
+                        </a>
+
+                    </td>
+
+                </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
 
 </main>
 
