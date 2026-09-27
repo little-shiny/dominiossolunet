@@ -2,10 +2,13 @@ package com.dominiossolunet.service;
 
 import com.dominiossolunet.model.Dominio;
 import com.dominiossolunet.model.HistorialDominio;
+import com.dominiossolunet.model.TokenDominio;
 import com.dominiossolunet.model.enums.Estado;
+import com.dominiossolunet.model.enums.EstadoAvisoRenovacion;
 import com.dominiossolunet.model.enums.TipoEventoDominio;
 import com.dominiossolunet.repository.DominioRepository;
 import com.dominiossolunet.repository.HistorialDominioRepository;
+import com.dominiossolunet.repository.TokenDominioRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,12 +20,15 @@ public class GestionDominioService {
     private final DominioRepository dominioRepository;
     private final HistorialDominioRepository historialDominioRepository;
 
+    private final TokenDominioRepository tokenDominioRepository;
+
     public GestionDominioService(
             DominioRepository dominioRepository,
-            HistorialDominioRepository historialDominioRepository) {
+            HistorialDominioRepository historialDominioRepository, TokenDominioRepository tokenDominioRepository) {
 
         this.dominioRepository = dominioRepository;
         this.historialDominioRepository = historialDominioRepository;
+        this.tokenDominioRepository = tokenDominioRepository;
     }
 
     /**
@@ -38,11 +44,18 @@ public class GestionDominioService {
                         )
                 );
 
-        if (dominio.getEstado() == Estado.ACTIVO) {
-            throw new IllegalStateException(
-                    "El dominio ya está activo: " + dominio.getNombreDominio()
-            );
-        }
+        TokenDominio tokenDominio =
+                tokenDominioRepository
+                        .findFirstByDominioAndEstadoAvisoRenovacionOrderByIdDesc(
+                                dominio,
+                                EstadoAvisoRenovacion.CONFIRMADO
+                        )
+                        .orElseThrow(() ->
+                                new IllegalStateException(
+                                        "El cliente no ha aceptado renovar el dominio: "
+                                                + dominio.getNombreDominio()
+                                )
+                        );
 
         dominio.setEstado(Estado.ACTIVO);
 

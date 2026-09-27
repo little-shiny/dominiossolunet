@@ -15,4 +15,15 @@ public interface TokenDominioRepository extends JpaRepository<TokenDominio, Inte
     Optional<TokenDominio> findByEstadoAvisoRenovacion(EstadoAvisoRenovacion estadoAvisoRenovacion);
 
     List<TokenDominio> findByTokenCliente(TokenCliente tokenCliente);
+
+    /**
+     * Query que permite saber si hay una confirmación para un dominio
+     * @param dominio
+     * @param estadoAvisoRenovacion
+     * @return
+     */
+    Optional<TokenDominio> findFirstByDominioAndEstadoAvisoRenovacionOrderByIdDesc(
+            Dominio dominio,
+            EstadoAvisoRenovacion estadoAvisoRenovacion
+    );
 }
