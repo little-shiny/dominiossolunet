@@ -1,9 +1,14 @@
 package com.dominiossolunet.service;
 
 import com.dominiossolunet.dto.ResultadoValidacionRec;
-import com.dominiossolunet.model.*;
+import com.dominiossolunet.model.Cliente;
+import com.dominiossolunet.model.Dominio;
+import com.dominiossolunet.model.HistorialDominio;
+import com.dominiossolunet.model.TokenCliente;
+import com.dominiossolunet.model.TokenDominio;
 import com.dominiossolunet.model.enums.Estado;
 import com.dominiossolunet.model.enums.EstadoAvisoRenovacion;
+import com.dominiossolunet.model.enums.EstadoRenovacion;
 import com.dominiossolunet.model.enums.ResultadoValidacion;
 import com.dominiossolunet.model.enums.TipoEventoDominio;
 import com.dominiossolunet.repository.HistorialDominioRepository;
@@ -46,15 +51,19 @@ class TokenServiceTest {
     // ============================================================
 
     private void setId(Dominio dominio, int id) throws Exception {
+
         Field idField = Dominio.class.getDeclaredField("id");
         idField.setAccessible(true);
         idField.set(dominio, id);
     }
 
     private Cliente crearCliente() {
+
         Cliente cliente = new Cliente();
+
         cliente.setNombre("Ana");
         cliente.setEmail("ana@ana.com");
+
         return cliente;
     }
 
@@ -76,9 +85,12 @@ class TokenServiceTest {
     }
 
     private TokenCliente crearToken(String token) {
+
         TokenCliente tokenCliente = new TokenCliente();
+
         tokenCliente.setToken(token);
         tokenCliente.setUsado(false);
+
         return tokenCliente;
     }
 
@@ -86,6 +98,7 @@ class TokenServiceTest {
             TokenCliente token,
             Dominio dominio
     ) {
+
         TokenDominio tokenDominio = new TokenDominio();
 
         tokenDominio.setTokenCliente(token);
@@ -104,7 +117,7 @@ class TokenServiceTest {
     @Test
     void generarToken_creaTokenClienteCorrectamente() {
 
-        Cliente cliente = new Cliente();
+        Cliente cliente = crearCliente();
 
         when(tokenClienteRepository.save(any(TokenCliente.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -115,13 +128,27 @@ class TokenServiceTest {
         );
 
         assertThat(resultado).isNotNull();
-        assertThat(resultado.getCliente()).isSameAs(cliente);
-        assertThat(resultado.isUsado()).isFalse();
-        assertThat(resultado.getToken()).isNotNull();
-        assertThat(resultado.getFechaCreacion()).isNotNull();
-        assertThat(resultado.getFechaExpiracion()).isNotNull();
 
-        verify(tokenClienteRepository).save(any(TokenCliente.class));
+        assertThat(resultado.getCliente())
+                .isSameAs(cliente);
+
+        assertThat(resultado.isUsado())
+                .isFalse();
+
+        assertThat(resultado.getToken())
+                .isNotNull();
+
+        assertThat(resultado.getFechaCreacion())
+                .isNotNull();
+
+        assertThat(resultado.getFechaExpiracion())
+                .isNotNull();
+
+        verify(tokenClienteRepository)
+                .save(any(TokenCliente.class));
+
+        verify(tokenDominioRepository, never())
+                .save(any(TokenDominio.class));
     }
 
     @Test
@@ -140,7 +167,7 @@ class TokenServiceTest {
         LocalDateTime antes = LocalDateTime.now();
 
         TokenCliente resultado = tokenService.generarToken(
-                new Cliente(),
+                crearCliente(),
                 List.of()
         );
 
@@ -150,13 +177,15 @@ class TokenServiceTest {
                 .isBetween(antes, despues);
 
         assertThat(resultado.getFechaExpiracion())
-                .isEqualTo(resultado.getFechaCreacion().plusDays(7));
+                .isEqualTo(
+                        resultado.getFechaCreacion().plusDays(7)
+                );
     }
 
     @Test
     void generarToken_creaUnTokenDominioPorCadaDominio() {
 
-        Cliente cliente = new Cliente();
+        Cliente cliente = crearCliente();
 
         Dominio dominio1 = new Dominio();
         dominio1.setCliente(cliente);
@@ -179,7 +208,7 @@ class TokenServiceTest {
     @Test
     void generarToken_asociaCadaDominioAlTokenYQuedaPendiente() {
 
-        Cliente cliente = new Cliente();
+        Cliente cliente = crearCliente();
 
         Dominio dominio1 = new Dominio();
         dominio1.setCliente(cliente);
@@ -210,11 +239,16 @@ class TokenServiceTest {
 
         assertThat(tokensDominio)
                 .extracting(TokenDominio::getDominio)
-                .containsExactlyInAnyOrder(dominio1, dominio2);
+                .containsExactlyInAnyOrder(
+                        dominio1,
+                        dominio2
+                );
 
         assertThat(tokensDominio)
                 .extracting(TokenDominio::getEstadoAvisoRenovacion)
-                .containsOnly(EstadoAvisoRenovacion.PENDIENTE);
+                .containsOnly(
+                        EstadoAvisoRenovacion.PENDIENTE
+                );
     }
 
     @Test
@@ -224,13 +258,14 @@ class TokenServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         TokenCliente resultado = tokenService.generarToken(
-                new Cliente(),
+                crearCliente(),
                 List.of()
         );
 
         assertThat(resultado).isNotNull();
 
-        verify(tokenClienteRepository).save(any(TokenCliente.class));
+        verify(tokenClienteRepository)
+                .save(any(TokenCliente.class));
 
         verify(tokenDominioRepository, never())
                 .save(any(TokenDominio.class));
@@ -245,12 +280,12 @@ class TokenServiceTest {
 
         Cliente cliente = crearCliente();
 
-        TokenCliente token = new TokenCliente();
-        token.setToken("abc123");
-        token.setUsado(false);
+        TokenCliente token = crearToken("abc123");
+
         token.setFechaExpiracion(
                 LocalDateTime.now().plusDays(1)
         );
+
         token.setCliente(cliente);
 
         when(tokenClienteRepository.findByToken("abc123"))
@@ -272,9 +307,10 @@ class TokenServiceTest {
     @Test
     void validarToken_cuandoTokenUsado_devuelveUsado() {
 
-        TokenCliente token = new TokenCliente();
-        token.setToken("token-usado");
+        TokenCliente token = crearToken("token-usado");
+
         token.setUsado(true);
+
         token.setFechaExpiracion(
                 LocalDateTime.now().plusDays(1)
         );
@@ -295,9 +331,8 @@ class TokenServiceTest {
     @Test
     void validarToken_cuandoTokenExpirado_devuelveExpirado() {
 
-        TokenCliente token = new TokenCliente();
-        token.setToken("token-expirado");
-        token.setUsado(false);
+        TokenCliente token = crearToken("token-expirado");
+
         token.setFechaExpiracion(
                 LocalDateTime.now().minusMinutes(1)
         );
@@ -327,15 +362,17 @@ class TokenServiceTest {
         assertThat(resultado.resultado())
                 .isEqualTo(ResultadoValidacion.NO_ENCONTRADO);
 
-        assertThat(resultado.token()).isNull();
+        assertThat(resultado.token())
+                .isNull();
     }
 
     @Test
     void validarToken_cuandoTokenUsadoYExpirado_devuelveUsado() {
 
-        TokenCliente token = new TokenCliente();
-        token.setToken("token");
+        TokenCliente token = crearToken("token");
+
         token.setUsado(true);
+
         token.setFechaExpiracion(
                 LocalDateTime.now().minusDays(1)
         );
@@ -359,18 +396,20 @@ class TokenServiceTest {
 
         TokenCliente token = crearToken("abc123");
 
+        Cliente cliente = crearCliente();
+        token.setCliente(cliente);
+
         when(tokenClienteRepository.findByToken("abc123"))
                 .thenReturn(Optional.of(token));
 
         tokenService.marcarComoUsado("abc123");
 
-        assertThat(token.isUsado()).isTrue();
+        assertThat(token.isUsado())
+                .isTrue();
 
         verify(tokenClienteRepository)
                 .findByToken("abc123");
 
-        // No se llama a save porque el método utiliza
-        // dirty checking dentro de la transacción.
         verify(tokenClienteRepository, never())
                 .save(any(TokenCliente.class));
     }
@@ -390,210 +429,45 @@ class TokenServiceTest {
                 );
 
         assertThat(excepcion.getMessage())
-                .isEqualTo("Token no encontrado: inexistente");
+                .isEqualTo(
+                        "Token no encontrado: inexistente"
+                );
     }
 
     // ============================================================
-    // marcaEstadoRenovacionPorListaIdDominio()
+    // obtenerTokenDominioPorTokenCliente()
     // ============================================================
 
     @Test
-    void marcaEstadoRenovacion_cuandoDominioMarcado_loConfirma()
-            throws Exception {
-
-        Cliente cliente = crearCliente();
-
-        Dominio dominio = crearDominio(
-                cliente,
-                1,
-                "ana.com"
-        );
+    void obtenerTokenDominioPorTokenCliente_devuelveLosTokenDominio() {
 
         TokenCliente token = crearToken("abc123");
 
-        TokenDominio tokenDominio =
-                crearTokenDominio(token, dominio);
+        TokenDominio tokenDominio1 =
+                new TokenDominio();
 
-        when(tokenClienteRepository.findByToken("abc123"))
-                .thenReturn(Optional.of(token));
-
-        when(tokenDominioRepository.findByTokenCliente(token))
-                .thenReturn(List.of(tokenDominio));
-
-        ResultadoValidacionRec resultado =
-                new ResultadoValidacionRec(
-                        ResultadoValidacion.VALIDO,
-                        token
-                );
-
-        tokenService.marcaEstadoRenovacionPorListaIdDominio(
-                List.of(1),
-                resultado
-        );
-
-        assertThat(tokenDominio.getEstadoAvisoRenovacion())
-                .isEqualTo(EstadoAvisoRenovacion.CONFIRMADO);
-
-        assertThat(token.isUsado()).isTrue();
-    }
-
-    @Test
-    void marcaEstadoRenovacion_cuandoDominioNoMarcado_loRechaza()
-            throws Exception {
-
-        Cliente cliente = crearCliente();
-
-        Dominio dominio = crearDominio(
-                cliente,
-                2,
-                "ana.com"
-        );
-
-        TokenCliente token = crearToken("abc123");
-
-        TokenDominio tokenDominio =
-                crearTokenDominio(token, dominio);
-
-        when(tokenClienteRepository.findByToken("abc123"))
-                .thenReturn(Optional.of(token));
+        TokenDominio tokenDominio2 =
+                new TokenDominio();
 
         when(tokenDominioRepository.findByTokenCliente(token))
-                .thenReturn(List.of(tokenDominio));
-
-        ResultadoValidacionRec resultado =
-                new ResultadoValidacionRec(
-                        ResultadoValidacion.VALIDO,
-                        token
-                );
-
-        tokenService.marcaEstadoRenovacionPorListaIdDominio(
-                List.of(99),
-                resultado
-        );
-
-        assertThat(tokenDominio.getEstadoAvisoRenovacion())
-                .isEqualTo(EstadoAvisoRenovacion.RECHAZADO);
-
-        assertThat(token.isUsado()).isTrue();
-    }
-
-    @Test
-    void marcaEstadoRenovacion_conVariosDominios_marcaCadaUnoSegunSeleccion()
-            throws Exception {
-
-        Cliente cliente = crearCliente();
-
-        Dominio dominio1 = crearDominio(
-                cliente,
-                1,
-                "ana.com"
-        );
-
-        Dominio dominio2 = crearDominio(
-                cliente,
-                2,
-                "ana.es"
-        );
-
-        Dominio dominio3 = crearDominio(
-                cliente,
-                3,
-                "ana.net"
-        );
-
-        TokenCliente token = crearToken("abc123");
-
-        TokenDominio td1 =
-                crearTokenDominio(token, dominio1);
-
-        TokenDominio td2 =
-                crearTokenDominio(token, dominio2);
-
-        TokenDominio td3 =
-                crearTokenDominio(token, dominio3);
-
-        when(tokenClienteRepository.findByToken("abc123"))
-                .thenReturn(Optional.of(token));
-
-        when(tokenDominioRepository.findByTokenCliente(token))
-                .thenReturn(List.of(td1, td2, td3));
-
-        ResultadoValidacionRec resultado =
-                new ResultadoValidacionRec(
-                        ResultadoValidacion.VALIDO,
-                        token
-                );
-
-        tokenService.marcaEstadoRenovacionPorListaIdDominio(
-                List.of(1, 3),
-                resultado
-        );
-
-        assertThat(td1.getEstadoAvisoRenovacion())
-                .isEqualTo(EstadoAvisoRenovacion.CONFIRMADO);
-
-        assertThat(td2.getEstadoAvisoRenovacion())
-                .isEqualTo(EstadoAvisoRenovacion.RECHAZADO);
-
-        assertThat(td3.getEstadoAvisoRenovacion())
-                .isEqualTo(EstadoAvisoRenovacion.CONFIRMADO);
-
-        assertThat(token.isUsado()).isTrue();
-    }
-
-    @Test
-    void marcaEstadoRenovacion_sinDominios_marcaTokenComoUsado() {
-
-        TokenCliente token = crearToken("abc123");
-
-        when(tokenClienteRepository.findByToken("abc123"))
-                .thenReturn(Optional.of(token));
-
-        when(tokenDominioRepository.findByTokenCliente(token))
-                .thenReturn(List.of());
-
-        ResultadoValidacionRec resultado =
-                new ResultadoValidacionRec(
-                        ResultadoValidacion.VALIDO,
-                        token
-                );
-
-        tokenService.marcaEstadoRenovacionPorListaIdDominio(
-                List.of(),
-                resultado
-        );
-
-        assertThat(token.isUsado()).isTrue();
-    }
-
-    @Test
-    void marcaEstadoRenovacion_cuandoTokenNoExiste_lanzaExcepcion() {
-
-        TokenCliente token = crearToken("inexistente");
-
-        when(tokenClienteRepository.findByToken("inexistente"))
-                .thenReturn(Optional.empty());
-
-        ResultadoValidacionRec resultado =
-                new ResultadoValidacionRec(
-                        ResultadoValidacion.VALIDO,
-                        token
-                );
-
-        IllegalArgumentException excepcion =
-                assertThrows(
-                        IllegalArgumentException.class,
-                        () -> tokenService.marcaEstadoRenovacionPorListaIdDominio(
-                                List.of(),
-                                resultado
+                .thenReturn(
+                        List.of(
+                                tokenDominio1,
+                                tokenDominio2
                         )
                 );
 
-        assertThat(excepcion.getMessage())
-                .isEqualTo("Token no encontrado: inexistente");
+        List<TokenDominio> resultado =
+                tokenService.obtenerTokenDominioPorTokenCliente(token);
 
-        verify(tokenDominioRepository, never())
-                .findByTokenCliente(any());
+        assertThat(resultado)
+                .containsExactly(
+                        tokenDominio1,
+                        tokenDominio2
+                );
+
+        verify(tokenDominioRepository)
+                .findByTokenCliente(token);
     }
 
     // ============================================================
@@ -628,10 +502,12 @@ class TokenServiceTest {
                 crearTokenDominio(token, dominio2);
 
         when(tokenDominioRepository.findByTokenCliente(token))
-                .thenReturn(List.of(
-                        tokenDominio1,
-                        tokenDominio2
-                ));
+                .thenReturn(
+                        List.of(
+                                tokenDominio1,
+                                tokenDominio2
+                        )
+                );
 
         when(tokenClienteRepository.findByToken("token123"))
                 .thenReturn(Optional.of(token));
@@ -645,10 +521,24 @@ class TokenServiceTest {
         );
 
         assertThat(tokenDominio1.getEstadoAvisoRenovacion())
-                .isEqualTo(EstadoAvisoRenovacion.CONFIRMADO);
+                .isEqualTo(
+                        EstadoAvisoRenovacion.CONFIRMADO
+                );
 
         assertThat(tokenDominio2.getEstadoAvisoRenovacion())
-                .isEqualTo(EstadoAvisoRenovacion.CONFIRMADO);
+                .isEqualTo(
+                        EstadoAvisoRenovacion.CONFIRMADO
+                );
+
+        assertThat(dominio1.getEstadoRenovacion())
+                .isEqualTo(
+                        EstadoRenovacion.PENDIENTE_RENOVACION
+                );
+
+        assertThat(dominio2.getEstadoRenovacion())
+                .isEqualTo(
+                        EstadoRenovacion.PENDIENTE_RENOVACION
+                );
 
         assertThat(tokenDominio1.getFechaInteraccionCliente())
                 .isNotNull();
@@ -657,7 +547,9 @@ class TokenServiceTest {
                 .isNotNull();
 
         ArgumentCaptor<HistorialDominio> captor =
-                ArgumentCaptor.forClass(HistorialDominio.class);
+                ArgumentCaptor.forClass(
+                        HistorialDominio.class
+                );
 
         verify(historialDominioRepository, times(2))
                 .save(captor.capture());
@@ -666,26 +558,29 @@ class TokenServiceTest {
                 captor.getAllValues();
 
         assertThat(historiales)
-                .allMatch(historial ->
-                        historial.getTipoEvento()
+                .anyMatch(historial ->
+                        historial.getDominio() == dominio1
+                                && historial.getTipoEvento()
                                 == TipoEventoDominio.CLIENTE_ACEPTA_RENOVACION
                 );
 
         assertThat(historiales)
-                .extracting(HistorialDominio::getDominio)
-                .containsExactlyInAnyOrder(
-                        dominio1,
-                        dominio2
+                .anyMatch(historial ->
+                        historial.getDominio() == dominio2
+                                && historial.getTipoEvento()
+                                == TipoEventoDominio.CLIENTE_ACEPTA_RENOVACION
                 );
 
-        assertThat(token.isUsado()).isTrue();
+        assertThat(historiales)
+                .allMatch(historial ->
+                        historial.getDetalle()
+                                .equals(
+                                        "El cliente ha aceptado la renovación del dominio"
+                                )
+                );
 
-        // La aceptación del cliente no renueva el dominio.
-        assertThat(dominio1.getEstado())
-                .isEqualTo(Estado.AVISO_ENVIADO);
-
-        assertThat(dominio2.getEstado())
-                .isEqualTo(Estado.AVISO_ENVIADO);
+        assertThat(token.isUsado())
+                .isTrue();
     }
 
     @Test
@@ -716,25 +611,44 @@ class TokenServiceTest {
                 crearTokenDominio(token, dominio2);
 
         when(tokenDominioRepository.findByTokenCliente(token))
-                .thenReturn(List.of(
-                        tokenDominio1,
-                        tokenDominio2
-                ));
+                .thenReturn(
+                        List.of(
+                                tokenDominio1,
+                                tokenDominio2
+                        )
+                );
 
         when(tokenClienteRepository.findByToken("token123"))
                 .thenReturn(Optional.of(token));
 
-        // El cliente acepta únicamente ana.com.
         tokenService.procesarConfirmacion(
                 token,
                 List.of(dominio1.getId())
         );
 
+        // Dominio aceptado
+
         assertThat(tokenDominio1.getEstadoAvisoRenovacion())
-                .isEqualTo(EstadoAvisoRenovacion.CONFIRMADO);
+                .isEqualTo(
+                        EstadoAvisoRenovacion.CONFIRMADO
+                );
+
+        assertThat(dominio1.getEstadoRenovacion())
+                .isEqualTo(
+                        EstadoRenovacion.PENDIENTE_RENOVACION
+                );
+
+        // Dominio rechazado
 
         assertThat(tokenDominio2.getEstadoAvisoRenovacion())
-                .isEqualTo(EstadoAvisoRenovacion.RECHAZADO);
+                .isEqualTo(
+                        EstadoAvisoRenovacion.RECHAZADO
+                );
+
+        assertThat(dominio2.getEstadoRenovacion())
+                .isEqualTo(
+                        EstadoRenovacion.RECHAZADO
+                );
 
         assertThat(tokenDominio1.getFechaInteraccionCliente())
                 .isNotNull();
@@ -743,7 +657,9 @@ class TokenServiceTest {
                 .isNotNull();
 
         ArgumentCaptor<HistorialDominio> captor =
-                ArgumentCaptor.forClass(HistorialDominio.class);
+                ArgumentCaptor.forClass(
+                        HistorialDominio.class
+                );
 
         verify(historialDominioRepository, times(2))
                 .save(captor.capture());
@@ -753,19 +669,20 @@ class TokenServiceTest {
 
         assertThat(historiales)
                 .anyMatch(historial ->
-                        historial.getDominio() == dominio1 &&
-                                historial.getTipoEvento()
-                                        == TipoEventoDominio.CLIENTE_ACEPTA_RENOVACION
+                        historial.getDominio() == dominio1
+                                && historial.getTipoEvento()
+                                == TipoEventoDominio.CLIENTE_ACEPTA_RENOVACION
                 );
 
         assertThat(historiales)
                 .anyMatch(historial ->
-                        historial.getDominio() == dominio2 &&
-                                historial.getTipoEvento()
-                                        == TipoEventoDominio.CLIENTE_RECHAZA_RENOVACION
+                        historial.getDominio() == dominio2
+                                && historial.getTipoEvento()
+                                == TipoEventoDominio.CLIENTE_RECHAZA_RENOVACION
                 );
 
-        assertThat(token.isUsado()).isTrue();
+        assertThat(token.isUsado())
+                .isTrue();
     }
 
     @Test
@@ -796,10 +713,12 @@ class TokenServiceTest {
                 crearTokenDominio(token, dominio2);
 
         when(tokenDominioRepository.findByTokenCliente(token))
-                .thenReturn(List.of(
-                        tokenDominio1,
-                        tokenDominio2
-                ));
+                .thenReturn(
+                        List.of(
+                                tokenDominio1,
+                                tokenDominio2
+                        )
+                );
 
         when(tokenClienteRepository.findByToken("token123"))
                 .thenReturn(Optional.of(token));
@@ -810,10 +729,24 @@ class TokenServiceTest {
         );
 
         assertThat(tokenDominio1.getEstadoAvisoRenovacion())
-                .isEqualTo(EstadoAvisoRenovacion.RECHAZADO);
+                .isEqualTo(
+                        EstadoAvisoRenovacion.RECHAZADO
+                );
 
         assertThat(tokenDominio2.getEstadoAvisoRenovacion())
-                .isEqualTo(EstadoAvisoRenovacion.RECHAZADO);
+                .isEqualTo(
+                        EstadoAvisoRenovacion.RECHAZADO
+                );
+
+        assertThat(dominio1.getEstadoRenovacion())
+                .isEqualTo(
+                        EstadoRenovacion.RECHAZADO
+                );
+
+        assertThat(dominio2.getEstadoRenovacion())
+                .isEqualTo(
+                        EstadoRenovacion.RECHAZADO
+                );
 
         assertThat(tokenDominio1.getFechaInteraccionCliente())
                 .isNotNull();
@@ -822,7 +755,9 @@ class TokenServiceTest {
                 .isNotNull();
 
         ArgumentCaptor<HistorialDominio> captor =
-                ArgumentCaptor.forClass(HistorialDominio.class);
+                ArgumentCaptor.forClass(
+                        HistorialDominio.class
+                );
 
         verify(historialDominioRepository, times(2))
                 .save(captor.capture());
@@ -833,6 +768,41 @@ class TokenServiceTest {
                                 == TipoEventoDominio.CLIENTE_RECHAZA_RENOVACION
                 );
 
-        assertThat(token.isUsado()).isTrue();
+        assertThat(captor.getAllValues())
+                .allMatch(historial ->
+                        historial.getDetalle()
+                                .equals(
+                                        "El cliente ha rechazado la renovación del dominio"
+                                )
+                );
+
+        assertThat(token.isUsado())
+                .isTrue();
+    }
+
+    @Test
+    void procesarConfirmacion_sinDominios_marcaTokenComoUsado() {
+
+        Cliente cliente = crearCliente();
+
+        TokenCliente token = crearToken("token123");
+        token.setCliente(cliente);
+
+        when(tokenDominioRepository.findByTokenCliente(token))
+                .thenReturn(List.of());
+
+        when(tokenClienteRepository.findByToken("token123"))
+                .thenReturn(Optional.of(token));
+
+        tokenService.procesarConfirmacion(
+                token,
+                List.of()
+        );
+
+        assertThat(token.isUsado())
+                .isTrue();
+
+        verify(historialDominioRepository, never())
+                .save(any(HistorialDominio.class));
     }
 }
