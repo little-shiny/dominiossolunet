@@ -25,6 +25,7 @@ public class Dominio {
     @Enumerated(EnumType.STRING)
     private Estado estado;
 
+    @Enumerated(EnumType.STRING)
     private EstadoRenovacion estadoRenovacion;
 
     private LocalDate fechaExpiracion;
