@@ -67,6 +67,7 @@ class RenovacionServiceIntegrationTest {
 
     @BeforeEach
     void limpiarDatos() throws FolderException {
+        historialDominioRepository.deleteAll();
         tokenDominioRepository.deleteAll();
         tokenClienteRepository.deleteAll();
         dominioRepository.deleteAll();
