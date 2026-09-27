@@ -12,7 +12,6 @@ import com.dominiossolunet.model.enums.EstadoRenovacion;
 import com.dominiossolunet.model.enums.Registrador;
 import com.dominiossolunet.model.enums.ResultadoValidacion;
 import com.dominiossolunet.model.enums.TipoEventoDominio;
-import com.dominiossolunet.repository.ClienteRepository;
 import com.dominiossolunet.repository.DominioRepository;
 import com.dominiossolunet.repository.HistorialDominioRepository;
 import com.dominiossolunet.repository.TokenClienteRepository;
@@ -45,9 +44,6 @@ class TokenServiceIntegrationTest {
 
     @Autowired
     private TokenDominioRepository tokenDominioRepository;
-
-    @Autowired
-    private ClienteRepository clienteRepository;
 
     @Autowired
     private DominioRepository dominioRepository;
@@ -668,7 +664,7 @@ class TokenServiceIntegrationTest {
         return entityManager.persistAndFlush(token);
     }
 
-    private TokenCliente crearToken(
+    private void crearToken(
             String valorToken,
             LocalDateTime fechaExpiracion,
             boolean usado) {
@@ -683,10 +679,10 @@ class TokenServiceIntegrationTest {
         token.setFechaExpiracion(fechaExpiracion);
         token.setUsado(usado);
 
-        return entityManager.persistAndFlush(token);
+        entityManager.persistAndFlush(token);
     }
 
-    private TokenDominio crearTokenDominio(
+    private void crearTokenDominio(
             TokenCliente token,
             Dominio dominio) {
 
@@ -698,7 +694,7 @@ class TokenServiceIntegrationTest {
                 EstadoAvisoRenovacion.PENDIENTE
         );
 
-        return entityManager.persistAndFlush(tokenDominio);
+        entityManager.persistAndFlush(tokenDominio);
     }
 
     private TokenDominio buscarTokenDominioPorDominio(

@@ -2,7 +2,6 @@ package com.dominiossolunet.service;
 
 import com.dominiossolunet.model.Cliente;
 import com.dominiossolunet.model.Dominio;
-import com.dominiossolunet.model.enums.Estado;
 import com.dominiossolunet.dto.ErrorEnvioEmail;
 import com.dominiossolunet.dto.ResultadoEnvioEmail;
 import com.icegreen.greenmail.junit5.GreenMailExtension;
@@ -20,7 +19,6 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -153,10 +151,10 @@ class EmailServiceIntegrationTest {
         assertThat(resultado)
                 .isNotNull();
 
-        assertThat(resultado.isEnviado())
+        assertThat(resultado.enviado())
                 .isTrue();
 
-        assertThat(resultado.getMensajeError())
+        assertThat(resultado.mensajeError())
                 .isNull();
 
         // -----------------------------------------------------
@@ -269,10 +267,10 @@ class EmailServiceIntegrationTest {
         assertThat(resultado)
                 .isNotNull();
 
-        assertThat(resultado.isEnviado())
+        assertThat(resultado.enviado())
                 .isTrue();
 
-        assertThat(resultado.getMensajeError())
+        assertThat(resultado.mensajeError())
                 .isNull();
 
         // -----------------------------------------------------

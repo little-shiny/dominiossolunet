@@ -106,9 +106,9 @@ class EmailServiceTest {
 
         // Assert
 
-        assertTrue(resultado.isEnviado());
+        assertTrue(resultado.enviado());
 
-        assertNull(resultado.getMensajeError());
+        assertNull(resultado.mensajeError());
 
         verify(mailSender).createMimeMessage();
 
@@ -165,11 +165,11 @@ class EmailServiceTest {
 
         // Assert
 
-        assertFalse(resultado.isEnviado());
+        assertFalse(resultado.enviado());
 
         assertEquals(
                 "Error de prueba",
-                resultado.getMensajeError()
+                resultado.mensajeError()
         );
 
         verify(mailSender).createMimeMessage();
@@ -270,9 +270,9 @@ class EmailServiceTest {
 
         // Assert
 
-        assertTrue(resultado.isEnviado());
+        assertTrue(resultado.enviado());
 
-        assertNull(resultado.getMensajeError());
+        assertNull(resultado.mensajeError());
 
         verify(mailSender).createMimeMessage();
 
@@ -315,11 +315,11 @@ class EmailServiceTest {
 
         // Assert
 
-        assertFalse(resultado.isEnviado());
+        assertFalse(resultado.enviado());
 
         assertEquals(
                 "Error enviando informe",
-                resultado.getMensajeError()
+                resultado.mensajeError()
         );
 
         verify(mailSender).createMimeMessage();
