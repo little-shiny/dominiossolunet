@@ -195,11 +195,15 @@ public class RenovacionService {
             dominio.setUltimoAviso(fechaActual);
 
             HistorialDominio historial = new HistorialDominio();
+
             historial.setDominio(dominio);
             historial.setTipoEvento(
                     TipoEventoDominio.AVISO_RENOVACION_ENVIADO
             );
             historial.setFecha(fechaHoraActual);
+            historial.setDetalle(
+                    "Aviso de renovación enviado al cliente"
+            );
 
             historialDominioRepository.save(historial);
         }
