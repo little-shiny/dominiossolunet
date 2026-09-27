@@ -22,10 +22,7 @@ public class GestionDominioService {
     private final HistorialDominioRepository historialDominioRepository;
     private final TokenDominioRepository tokenDominioRepository;
 
-    public GestionDominioService(
-            DominioRepository dominioRepository,
-            HistorialDominioRepository historialDominioRepository,
-            TokenDominioRepository tokenDominioRepository) {
+    public GestionDominioService(DominioRepository dominioRepository, HistorialDominioRepository historialDominioRepository, TokenDominioRepository tokenDominioRepository) {
 
         this.dominioRepository = dominioRepository;
         this.historialDominioRepository = historialDominioRepository;
@@ -34,68 +31,42 @@ public class GestionDominioService {
 
     /**
      * Marca un dominio como renovado en el registrador.
-     *
+     * <p>
      * Para poder realizar la renovación:
      * - el dominio debe existir
      * - no debe estar ya renovado
      * - no debe estar rechazado
      * - el cliente debe haber confirmado la renovación
-     *
+     * <p>
      * La renovación se registra en estadoRenovacion y
      * se añade una entrada al historial.
      */
     @Transactional
     public void marcarComoRenovado(int idDominio) {
 
-        Dominio dominio = dominioRepository.findById(idDominio)
-                .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Dominio no encontrado: " + idDominio
-                        )
-                );
+        Dominio dominio = dominioRepository.findById(idDominio).orElseThrow(() -> new IllegalArgumentException("Dominio no encontrado: " + idDominio));
 
-        if (dominio.getEstadoRenovacion()
-                == EstadoRenovacion.RENOVADO) {
+        if (dominio.getEstadoRenovacion() == EstadoRenovacion.RENOVADO) {
 
-            throw new IllegalStateException(
-                    "El dominio ya está marcado como renovado: "
-                            + dominio.getNombreDominio()
-            );
+            throw new IllegalStateException("El dominio ya está marcado como renovado: " + dominio.getNombreDominio());
         }
 
-        if (dominio.getEstadoRenovacion()
-                == EstadoRenovacion.RECHAZADO) {
+        if (dominio.getEstadoRenovacion() == EstadoRenovacion.RECHAZADO) {
 
-            throw new IllegalStateException(
-                    "El cliente ha rechazado la renovación del dominio: "
-                            + dominio.getNombreDominio()
-            );
+            throw new IllegalStateException("El cliente ha rechazado la renovación del dominio: " + dominio.getNombreDominio());
         }
 
-        TokenDominio ultimoTokenDominio = tokenDominioRepository
-                .findFirstByDominioOrderByIdDesc(dominio)
-                .orElseThrow(() ->
-                        new IllegalStateException(
-                                "El dominio no tiene ninguna respuesta de renovación: "
-                                        + dominio.getNombreDominio()
-                        )
-                );
+        TokenDominio ultimoTokenDominio = tokenDominioRepository.findFirstByDominioOrderByIdDesc(dominio).orElseThrow(() -> new IllegalStateException("El dominio no tiene ninguna respuesta de renovación: " + dominio.getNombreDominio()));
 
-        if (ultimoTokenDominio.getEstadoAvisoRenovacion()
-                != EstadoAvisoRenovacion.CONFIRMADO) {
+        if (ultimoTokenDominio.getEstadoAvisoRenovacion() != EstadoAvisoRenovacion.CONFIRMADO) {
 
-            throw new IllegalStateException(
-                    "El cliente no ha confirmado la renovación del dominio: "
-                            + dominio.getNombreDominio()
-            );
+            throw new IllegalStateException("El cliente no ha confirmado la renovación del dominio: " + dominio.getNombreDominio());
         }
 
         /*
          * La renovación se ha realizado realmente en el registrador.
          */
-        dominio.setEstadoRenovacion(
-                EstadoRenovacion.RENOVADO
-        );
+        dominio.setEstadoRenovacion(EstadoRenovacion.RENOVADO);
 
         /*
          * Guardamos explícitamente el dominio actualizado.
@@ -108,18 +79,27 @@ public class GestionDominioService {
         HistorialDominio historial = new HistorialDominio();
 
         historial.setDominio(dominio);
-        historial.setTipoEvento(
-                TipoEventoDominio.RENOVACION_REALIZADA
-        );
+        historial.setTipoEvento(TipoEventoDominio.RENOVACION_REALIZADA);
         historial.setFecha(LocalDateTime.now());
-        historial.setDetalle(
-                "Renovación realizada en el registrador"
-        );
+        historial.setDetalle("Renovación realizada en el registrador");
 
         historialDominioRepository.save(historial);
     }
 
     public List<Dominio> obtenerTodosLosDominios() {
         return dominioRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public Dominio obtenerDominio(int idDominio) {
+        return dominioRepository.findById(idDominio).orElseThrow(() -> new IllegalArgumentException("Dominio no encontrado: " + idDominio));
+    }
+
+    @Transactional(readOnly = true)
+    public List<HistorialDominio> obtenerHistorial(int idDominio) {
+
+        Dominio dominio = obtenerDominio(idDominio);
+
+        return historialDominioRepository.findByDominioOrderByFechaDesc(dominio);
     }
 }
