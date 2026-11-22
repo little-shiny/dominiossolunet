@@ -1,6 +1,7 @@
 package com.dominiossolunet.service;
 
 import com.dominiossolunet.dto.ResultadoValidacionRec;
+import com.dominiossolunet.exception.RecursoNoEncontradoException;
 import com.dominiossolunet.model.Cliente;
 import com.dominiossolunet.model.Dominio;
 import com.dominiossolunet.model.HistorialDominio;
@@ -168,7 +169,7 @@ public class TokenService {
     @Transactional
     public void marcarComoUsado(String token) {
 
-        TokenCliente tokenCliente = tokenClienteRepository.findByToken(token).orElseThrow(() -> new IllegalArgumentException("Token no encontrado: " + token));
+        TokenCliente tokenCliente = tokenClienteRepository.findByToken(token).orElseThrow(() -> new RecursoNoEncontradoException("Token no encontrado: " + token));
 
         tokenCliente.setUsado(true);
 

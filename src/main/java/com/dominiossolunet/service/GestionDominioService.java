@@ -1,5 +1,6 @@
 package com.dominiossolunet.service;
 
+import com.dominiossolunet.exception.RecursoNoEncontradoException;
 import com.dominiossolunet.model.Dominio;
 import com.dominiossolunet.model.Facturacion;
 import com.dominiossolunet.model.HistorialDominio;
@@ -50,7 +51,7 @@ public class GestionDominioService {
     @Transactional
     public void marcarComoRenovado(int idDominio) {
 
-        Dominio dominio = dominioRepository.findById(idDominio).orElseThrow(() -> new IllegalArgumentException("Dominio no encontrado: " + idDominio));
+        Dominio dominio = dominioRepository.findById(idDominio).orElseThrow(() -> new RecursoNoEncontradoException("Dominio no encontrado: " + idDominio));
 
         if (dominio.getEstadoRenovacion() == EstadoRenovacion.RENOVADO) {
 
@@ -98,7 +99,7 @@ public class GestionDominioService {
 
     @Transactional(readOnly = true)
     public Dominio obtenerDominio(int idDominio) {
-        return dominioRepository.findById(idDominio).orElseThrow(() -> new IllegalArgumentException("Dominio no encontrado: " + idDominio));
+        return dominioRepository.findById(idDominio).orElseThrow(() -> new RecursoNoEncontradoException("Dominio no encontrado: " + idDominio));
     }
 
     @Transactional(readOnly = true)
@@ -120,7 +121,7 @@ public class GestionDominioService {
     @Transactional(readOnly = true)
     public boolean puedeMarcarComoRenovado(int idDominio) {
 
-        Dominio dominio = dominioRepository.findById(idDominio).orElseThrow(() -> new IllegalArgumentException("Dominio no encontrado: " + idDominio));
+        Dominio dominio = dominioRepository.findById(idDominio).orElseThrow(() -> new RecursoNoEncontradoException("Dominio no encontrado: " + idDominio));
 
         if (dominio.getEstadoRenovacion() == EstadoRenovacion.RENOVADO) {
             return false;

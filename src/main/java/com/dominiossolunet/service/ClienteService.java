@@ -1,6 +1,7 @@
 package com.dominiossolunet.service;
 
 import com.dominiossolunet.dto.ClienteResumen;
+import com.dominiossolunet.exception.RecursoNoEncontradoException;
 import com.dominiossolunet.model.Cliente;
 import com.dominiossolunet.model.Dominio;
 import com.dominiossolunet.model.Facturacion;
@@ -116,7 +117,7 @@ public class ClienteService {
 
         return clienteRepository.findById(idCliente)
                 .orElseThrow(() ->
-                        new IllegalArgumentException(
+                        new RecursoNoEncontradoException(
                                 "Cliente no encontrado: " + idCliente));
     }
 
