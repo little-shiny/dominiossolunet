@@ -12,8 +12,6 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import org.thymeleaf.TemplateEngine;
-import org.thymeleaf.context.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,8 +22,6 @@ import java.util.List;
 @Service
 public class EmailService {
     private final JavaMailSender mailSender;
-    private final TemplateEngine templateEngine;
-
     private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
     @Value("${spring.mail.username}")
@@ -34,9 +30,8 @@ public class EmailService {
     @Value("${app.email.admin}")
     private String emailAdmin;
 
-    public EmailService(JavaMailSender mailSender, TemplateEngine templateEngine) {
+    public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
-        this.templateEngine = templateEngine;
     }
 
 
@@ -49,12 +44,7 @@ public class EmailService {
             MimeMessage mensaje = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, true);
 
-            //Context para la plantilla de thymeleaf
-            Context context = new Context();
-            context.setVariable("listaDominios", dominiosRenovar);
-            context.setVariable("urlRenovacion", urlRenovacion);
-
-            String html = templateEngine.process("email/aviso-renovacion", context);
+            String html = construirAvisoRenovacionHtml(dominiosRenovar, urlRenovacion);
 
             helper.setTo(cliente.getEmail());
             helper.setFrom(remitente);
@@ -79,11 +69,7 @@ public class EmailService {
             MimeMessage mensaje = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mensaje, true);
 
-            //Context para la plantilla de thymeleaf
-            Context context = new Context();
-            context.setVariable("erroresEnvio", erroresEnvio);
-
-            String html = templateEngine.process("email/informe-renovacion-admin", context);
+            String html = construirInformeAdminHtml(erroresEnvio);
 
             helper.setTo(emailAdmin);
             helper.setFrom(remitente);
@@ -100,6 +86,98 @@ public class EmailService {
             logger.error("Error enviando el informe de renovación al administrador",e);
             return new ResultadoEnvioEmail(false, e.getMessage());
         }
+    }
+
+    private String construirAvisoRenovacionHtml(
+            List<Dominio> dominios,
+            String urlRenovacion
+    ) {
+        DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+        String elementos = dominios.stream()
+                .map(d -> {
+                    String fecha = d.getFechaExpiracion() == null
+                            ? "sin fecha de expiración"
+                            : d.getFechaExpiracion().format(formato);
+
+                    return "<li>" + escaparHtml(d.getNombreDominio())
+                            + " expirará el " + escaparHtml(fecha) + "</li>";
+                })
+                .collect(java.util.stream.Collectors.joining());
+
+        return """
+            <!doctype html>
+            <html lang="es">
+            <body>
+              <img src="cid:logosolunet" alt="Solunet" width="180">
+              <p>Buenos días,</p>
+              <p>Le comunicamos que los siguientes dominios están próximos a expirar:</p>
+              <ul>%s</ul>
+              <p>Para solicitar la renovación, acceda desde este enlace:</p>
+              <p><a href="%s">Solicitar renovación</a></p>
+              <p>Para cualquier duda, contacte con
+                <a href="mailto:facturacion@solunet.es">facturacion@solunet.es</a>.
+              </p>
+              <p>Saludos cordiales.</p>
+            </body>
+            </html>
+            """.formatted(elementos, escaparHtml(urlRenovacion));
+    }
+
+    private String construirInformeAdminHtml(List<ErrorEnvioEmail> errores) {
+        if (errores == null || errores.isEmpty()) {
+            return """
+                <!doctype html>
+                <html lang="es">
+                <body>
+                  <img src="cid:logosolunet" alt="Solunet" width="180">
+                  <h2>Informe de renovación de dominios</h2>
+                  <p>No se han producido errores durante el proceso.</p>
+                </body>
+                </html>
+                """;
+        }
+
+        String detalles = errores.stream()
+                .map(error -> {
+                    String dominios = error.dominios().stream()
+                            .map(d -> "<li>" + escaparHtml(d.getNombreDominio()) + "</li>")
+                            .collect(java.util.stream.Collectors.joining());
+
+                    return "<section><h3>"
+                            + escaparHtml(error.cliente().getNombre())
+                            + "</h3><p>"
+                            + escaparHtml(error.cliente().getEmail())
+                            + "</p><ul>" + dominios + "</ul><p>"
+                            + escaparHtml(error.mensajeError())
+                            + "</p></section>";
+                })
+                .collect(java.util.stream.Collectors.joining());
+
+        return """
+            <!doctype html>
+            <html lang="es">
+            <body>
+              <img src="cid:logosolunet" alt="Solunet" width="180">
+              <h2>Informe de renovación de dominios</h2>
+              <p>Se han producido errores durante el proceso:</p>
+              %s
+            </body>
+            </html>
+            """.formatted(detalles);
+    }
+
+    private String escaparHtml(String texto) {
+        if (texto == null) {
+            return "";
+        }
+
+        return texto
+                .replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;")
+                .replace("'", "&#39;");
     }
 
 }
